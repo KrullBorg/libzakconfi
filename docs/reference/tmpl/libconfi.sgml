@@ -1,0 +1,190 @@
+<!-- ##### SECTION Title ##### -->
+Confi
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT Confi ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG Confi:description ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG Confi:id-config ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG Confi:name ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG Confi:root ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION confi_get_type ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_new ##### -->
+<para>
+
+</para>
+
+@gda_client: 
+@provider_id: 
+@cnc_string: 
+@name: 
+@root: 
+@create: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_get_configs_list ##### -->
+<para>
+
+</para>
+
+@gda_client: 
+@provider_id: 
+@cnc_string: 
+@filter: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_get_tree ##### -->
+<para>
+
+</para>
+
+@confi: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_set_root ##### -->
+<para>
+
+</para>
+
+@confi: 
+@root: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_add_key ##### -->
+<para>
+
+</para>
+
+@confi: 
+@parent: 
+@key: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_add_key_with_value ##### -->
+<para>
+
+</para>
+
+@confi: 
+@parent: 
+@key: 
+@value: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_key_set_key ##### -->
+<para>
+
+</para>
+
+@confi: 
+@ck: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_remove_path ##### -->
+<para>
+
+</para>
+
+@confi: 
+@path: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_path_get_value ##### -->
+<para>
+
+</para>
+
+@confi: 
+@path: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_path_set_value ##### -->
+<para>
+
+</para>
+
+@confi: 
+@path: 
+@value: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_path_move ##### -->
+<para>
+
+</para>
+
+@confi: 
+@path: 
+@parent: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_remove ##### -->
+<para>
+
+</para>
+
+@confi: 
+@Returns: 
+
+
+<!-- ##### FUNCTION confi_destroy ##### -->
+<para>
+
+</para>
+
+@confi: 
+
+

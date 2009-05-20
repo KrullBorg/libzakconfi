@@ -1,0 +1,41 @@
+<!-- ##### MACRO CONFI ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO CONFI_CLASS ##### -->
+<para>
+
+</para>
+
+@klass: 
+
+<!-- ##### MACRO CONFI_GET_CLASS ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO IS_CONFI ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO IS_CONFI_CLASS ##### -->
+<para>
+
+</para>
+
+@klass: 
+
+<!-- ##### MACRO TYPE_CONFI ##### -->
+<para>
+
+</para>
+
+

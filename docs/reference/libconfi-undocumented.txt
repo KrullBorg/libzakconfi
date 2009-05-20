@@ -1,0 +1,23 @@
+38% symbol docs coverage.
+8 symbols documented.
+2 symbols incomplete.
+13 not documented.
+
+
+Confi
+confi_add_key
+confi_add_key_with_value
+confi_get_configs_list
+confi_get_tree
+confi_get_type
+confi_key_set_key
+confi_new
+confi_path_get_value
+confi_path_move
+confi_path_set_value
+confi_remove (Returns)
+confi_remove_path (Returns)
+confi_set_root
+
+
+libconfi:Short_Description

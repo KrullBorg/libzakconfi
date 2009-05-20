@@ -1,0 +1,3 @@
+#include <libconfi.h>
+
+confi_get_type

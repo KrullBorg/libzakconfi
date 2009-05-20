@@ -1,0 +1,11 @@
+2006-11-01: Andrea Zagli <azagli@inwind.it>
+
+	* libconfi.c: solved a problem about quoting reserved words
+
+2006-09-06: Andrea Zagli <azagli@inwind.it>
+
+	* libconfi.c: some bugfixes
+
+2006-08-18: Andrea Zagli <azagli@inwind.it>
+
+	* libconfi.c: escaped sql strings with gdao_strescape()
