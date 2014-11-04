@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006 Andrea Zagli <azagli@libero.it>
+ *  Copyright (C) 2005-2014 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 #include <glib.h>
 #include <glib-object.h>
 
-#include <libgdaobj.h>
+#include <libgdaex/libgdaex.h>
 
 G_BEGIN_DECLS
 
@@ -61,16 +61,12 @@ typedef struct
 
 GType confi_get_type (void) G_GNUC_CONST;
 
-Confi *confi_new (GdaClient *gda_client,
-                  const gchar *provider_id,
-                  const gchar *cnc_string,
+Confi *confi_new (const gchar *cnc_string,
                   const gchar *name,
                   const gchar *root,
                   gboolean create);
 
-GList *confi_get_configs_list (GdaClient *gda_client,
-                               const gchar *provider_id,
-                               const gchar *cnc_string,
+GList *confi_get_configs_list (const gchar *cnc_string,
                                const gchar *filter);
 
 GNode *confi_get_tree (Confi *confi);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2006 Andrea Zagli <azagli@libero.it>
+ *  Copyright (C) 2005-2014 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ static gboolean confi_remove_path_traverse_func (GNode *node, gpointer data);
 typedef struct _ConfiPrivate ConfiPrivate;
 struct _ConfiPrivate
 	{
-		GdaO *gdao;
+		GdaEx *gdaex;
 		gint id_config;
 		gchar *name,
 		      *description,
@@ -67,33 +67,7 @@ struct _ConfiPrivate
 		gchar chrquot;
 	};
 
-GType
-confi_get_type (void)
-{
-	static GType confi_type = 0;
-
-	if (!confi_type)
-		{
-			static const GTypeInfo confi_info =
-			{
-				sizeof (ConfiClass),
-				NULL,	/* base_init */
-				NULL,	/* base_finalize */
-				(GClassInitFunc) confi_class_init,
-				NULL,	/* class_finalize */
-				NULL,	/* class_data */
-				sizeof (Confi),
-				0,	/* n_preallocs */
-				(GInstanceInitFunc) confi_init,
-				NULL
-			};
-
-			confi_type = g_type_register_static (G_TYPE_OBJECT, "Confi",
-			                                     &confi_info, 0);
-		}
-
-	return confi_type;
-}
+G_DEFINE_TYPE (Confi, confi, G_TYPE_OBJECT)
 
 static void
 confi_class_init (ConfiClass *klass)
@@ -138,8 +112,6 @@ confi_init (Confi *confi)
 
 /**
  * confi_new:
- * @gda_client: a #GdaClient. If it's NULL, it will be created a new one.
- * @provider_id: the provider id to connect.
  * @cnc_string: the connection string to use to connect to database that
  * contains configuration.
  * @name: configuration's name.
@@ -149,9 +121,7 @@ confi_init (Confi *confi)
  * Returns: the newly created #Confi object, or NULL if it fails.
  */
 Confi
-*confi_new (GdaClient *gda_client,
-            const gchar *provider_id,
-            const gchar *cnc_string,
+*confi_new (const gchar *cnc_string,
             const gchar *name,
             const gchar *root,
             gboolean create)
@@ -166,35 +136,40 @@ Confi
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	priv->gdao = gdao_new_from_string (gda_client, provider_id, cnc_string);
-	if (priv->gdao == NULL)
+	priv->gdaex = gdaex_new_from_string (cnc_string);
+	if (priv->gdaex == NULL)
 		{
 			/* TO DO */
 			return NULL;
 		}
 
-	priv->chrquot = gdao_get_chr_quoting (priv->gdao);
+	priv->chrquot = gdaex_get_chr_quoting (priv->gdaex);
 
 	/* check if config exists */
 	sql = g_strdup_printf ("SELECT id, name FROM configs WHERE name = '%s'",
-	                       gdao_strescape (name, NULL));
-	dm = gdao_query (priv->gdao, sql);
+	                       gdaex_strescape (name, NULL));
+	dm = gdaex_query (priv->gdaex, sql);
 	if (dm == NULL || gda_data_model_get_n_rows (dm) == 0)
 		{
 			if (create)
 				{
 						/* saving a new config into database */
-						dm = gdao_query (priv->gdao, "SELECT MAX(id) FROM configs");
 						if (dm != NULL)
 							{
-								id = gdao_data_model_get_value_integer_at (dm, 0, 0);
+								g_object_unref (dm);
+							}
+
+						dm = gdaex_query (priv->gdaex, "SELECT MAX(id) FROM configs");
+						if (dm != NULL)
+							{
+								id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
 							}
 						id++;
 
-						if (gdao_execute (priv->gdao, g_strdup_printf ("INSERT INTO configs "
+						if (gdaex_execute (priv->gdaex, g_strdup_printf ("INSERT INTO configs "
 							                                             "(id, name, description) "
-																						    					 "VALUES (%d, '%s', '')",
-																					    						 id, gdao_strescape (name, NULL))) == -1)
+							                                             "VALUES (%d, '%s', '')",
+							                                             id, gdaex_strescape (name, NULL))) == -1)
 							{
 								return NULL;
 							}
@@ -207,7 +182,7 @@ Confi
 		}
 	else
 		{
-			id = gdao_data_model_get_value_integer_at (dm, 0, 0);
+			id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
 		}
 
 	g_object_set (G_OBJECT (confi),
@@ -217,13 +192,16 @@ Confi
 	priv->id_config = id;
 	priv->values = g_hash_table_new (g_str_hash, g_str_equal);
 
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
+		}
+
 	return confi;
 }
 
 /**
  * confi_get_configs_list:
- * @gda_client: a #GdaClient. If it's NULL, it will be created a new one.
- * @provider_id: the provider id to connect.
  * @cnc_string: the connection string to use to connect to database that
  * contains configuration.
  * @filter:
@@ -232,17 +210,15 @@ Confi
  * #GList but with a unique NULL element.
  */
 GList
-*confi_get_configs_list (GdaClient *gda_client,
-                         const gchar *provider_id,
-                         const gchar *cnc_string,
+*confi_get_configs_list (const gchar *cnc_string,
                          const gchar *filter)
 {
 	GList *lst = NULL;
 	gchar *sql, *where = "";
 
-	GdaO *gdao = gdao_new_from_string (gda_client, provider_id, cnc_string);
+	GdaEx *gdaex = gdaex_new_from_string (cnc_string);
 
-	if (gdao == NULL)
+	if (gdaex == NULL)
 		{
 			return NULL;
 		}
@@ -254,7 +230,7 @@ GList
 
 	sql = g_strdup_printf ("SELECT * FROM configs%s", where);
 
-	GdaDataModel *dmConfigs = gdao_query (gdao, sql);
+	GdaDataModel *dmConfigs = gdaex_query (gdaex, sql);
 	if (dmConfigs != NULL)
 		{
 			gint row, id,
@@ -266,16 +242,16 @@ GList
 				{
 					for (row = 0; row < rows; row++)
 						{
-							confi = confi_new (gda_client, provider_id, cnc_string,
-																 gdao_data_model_get_field_value_stringify_at (dmConfigs, row, "name"),
-																 NULL, FALSE);
+							confi = confi_new (cnc_string,
+							                   gdaex_data_model_get_field_value_stringify_at (dmConfigs, row, "name"),
+							                   NULL, FALSE);
 
 							priv = CONFI_GET_PRIVATE (confi);
-							priv->id_config = gdao_data_model_get_field_value_integer_at (dmConfigs, row, "id");
+							priv->id_config = gdaex_data_model_get_field_value_integer_at (dmConfigs, row, "id");
 
 							g_object_set (G_OBJECT (confi),
-														"description", gdao_data_model_get_field_value_stringify_at (dmConfigs, row, "description"),
-														NULL);
+							              "description", gdaex_data_model_get_field_value_stringify_at (dmConfigs, row, "description"),
+							              NULL);
 
 							lst = g_list_append (lst, confi);
 						}
@@ -286,7 +262,7 @@ GList
 				}
 		}
 
-	gdao_free (gdao);
+	gdaex_free (gdaex);
 
 	return lst;
 }
@@ -392,7 +368,7 @@ ConfiKey
 				}
 			else
 				{
-					id_parent = gdao_data_model_get_field_value_integer_at (dmParent, 0, "id");
+					id_parent = gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id");
 				}
 		}
 
@@ -407,10 +383,11 @@ ConfiKey
 			                       "WHERE id_configs = %d ",
 			                       priv->chrquot, priv->chrquot,
 			                       priv->id_config);
-			dm = gdao_query (priv->gdao, sql);
+			dm = gdaex_query (priv->gdaex, sql);
 			if (dm != NULL)
 				{
-					id = gdao_data_model_get_value_integer_at (dm, 0, 0);
+					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
+					g_object_unref (dm);
 				}
 			id++;
 
@@ -422,9 +399,9 @@ ConfiKey
 			                       priv->id_config,
 			                       id,
 			                       id_parent,
-			                       gdao_strescape (key_, NULL),
+			                       gdaex_strescape (key_, NULL),
 			                       "");
-			if (gdao_execute (priv->gdao, sql) == -1)
+			if (gdaex_execute (priv->gdaex, sql) == -1)
 				{
 					/* TO DO */
 					return NULL;
@@ -509,13 +486,13 @@ confi_key_set_key (Confi *confi,
 	                              "AND id = %d",
 	                              priv->chrquot, priv->chrquot,
 	                              priv->chrquot, priv->chrquot,
-	                              gdao_strescape (ck->key, NULL),
-	                              gdao_strescape (ck->value, NULL),
-	                              gdao_strescape (ck->description, NULL),
+	                              gdaex_strescape (ck->key, NULL),
+	                              gdaex_strescape (ck->value, NULL),
+	                              gdaex_strescape (ck->description, NULL),
 	                              priv->id_config,
 	                              ck->id);
 
-	ret = (gdao_execute (priv->gdao, sql) >= 0);
+	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 
 	return ret;
 }
@@ -543,7 +520,7 @@ confi_remove_path (Confi *confi, const gchar *path)
 		
 			/* removing every child key */
 			GNode *node, *root;
-			gint id = gdao_data_model_get_field_value_integer_at (dm, 0, "id");
+			gint id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 
 			node = g_node_new (path_);
 			get_children (confi, node, id, path_);
@@ -561,6 +538,10 @@ confi_remove_path (Confi *confi, const gchar *path)
 	else
 		{
 			g_warning ("Path %s doesn't exists.", path);
+		}
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
 		}
 
 	return ret;
@@ -634,14 +615,18 @@ confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 			                              "WHERE id_configs = %d "
 			                              "AND id = %d ",
 			                              priv->chrquot, priv->chrquot,
-			                              gdao_strescape (value, NULL),
+			                              gdaex_strescape (value, NULL),
 			                              priv->id_config,
-			                              gdao_data_model_get_field_value_integer_at (dm, 0, "id"));
-			ret = (gdao_execute (priv->gdao, sql) >= 0);
+			                              gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
+			ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 		}
 	else
 		{
 			g_warning ("Path %s doesn't exists.", path);
+		}
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
 		}
 
 	return ret;
@@ -672,11 +657,11 @@ confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 	                              "WHERE id_configs = %d "
 	                              "AND id = %d",
 	                              priv->chrquot, priv->chrquot,
-	                              gdao_data_model_get_field_value_integer_at (dmParent, 0, "id"),
+	                              gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id"),
 	                              priv->id_config,
-	                              gdao_data_model_get_field_value_integer_at (dmPath, 0, "id"));
+	                              gdaex_data_model_get_field_value_integer_at (dmPath, 0, "id"));
 
-	ret = (gdao_execute (priv->gdao, sql) >= 0);
+	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 
 	return ret;
 }
@@ -708,13 +693,18 @@ ConfiKey
 		}
 
 	ck = (ConfiKey *)g_malloc0 (sizeof (ConfiKey));
-	ck->id_config = gdao_data_model_get_field_value_integer_at (dm, 0, "id_configs");
-	ck->id = gdao_data_model_get_field_value_integer_at (dm, 0, "id");
-	ck->id_parent = gdao_data_model_get_field_value_integer_at (dm, 0, "id_parent");
-	ck->key = gdao_data_model_get_field_value_stringify_at (dm, 0, "key");
-	ck->value = gdao_data_model_get_field_value_stringify_at (dm, 0, "value");
-	ck->description = gdao_data_model_get_field_value_stringify_at (dm, 0, "description");
+	ck->id_config = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_configs");
+	ck->id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
+	ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_parent");
+	ck->key = gdaex_data_model_get_field_value_stringify_at (dm, 0, "key");
+	ck->value = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
+	ck->description = gdaex_data_model_get_field_value_stringify_at (dm, 0, "description");
 	ck->path = g_strdup (path_);
+
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
+		}
 
 	return ck;
 }
@@ -732,8 +722,8 @@ confi_remove (Confi *confi)
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	if (gdao_execute (priv->gdao,
-	                  g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
+	if (gdaex_execute (priv->gdaex,
+	                   g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
 	                                   priv->chrquot, priv->chrquot,
 	                                   priv->id_config)) == -1)
 		{
@@ -741,9 +731,9 @@ confi_remove (Confi *confi)
 		}
 	else 
 		{
-			if (gdao_execute (priv->gdao,
-												g_strdup_printf ("DELETE FROM configs WHERE id = %d",
-												priv->id_config)) == -1)
+			if (gdaex_execute (priv->gdaex,
+			                   g_strdup_printf ("DELETE FROM configs WHERE id = %d",
+			                                    priv->id_config)) == -1)
 				{
 					ret = FALSE;
 				}
@@ -767,7 +757,7 @@ confi_destroy (Confi *confi)
 {
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	gdao_free (priv->gdao);
+	gdaex_free (priv->gdaex);
 	g_hash_table_destroy (priv->values);
 	g_free (priv->name);
 	g_free (priv->description);
@@ -843,10 +833,10 @@ static GdaDataModel
 					                       "AND %ckey%c = '%s'",
 					                       priv->chrquot, priv->chrquot,
 					                       priv->id_config,
-																 id_parent,
+					                       id_parent,
 					                       priv->chrquot, priv->chrquot,
-					                       gdao_strescape (token, NULL));
-					dm = gdao_query (priv->gdao, sql);
+					                       gdaex_strescape (token, NULL));
+					dm = gdaex_query (priv->gdaex, sql);
 					if (dm == NULL || gda_data_model_get_n_rows (dm) != 1)
 						{
 							/* TO DO */
@@ -854,7 +844,7 @@ static GdaDataModel
 							dm = NULL;
 							break;
 						}
-					id_parent = gdao_data_model_get_field_value_integer_at (dm, 0, "id");
+					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 				}
 
 			i++;
@@ -872,7 +862,7 @@ static gchar
 	dm = path_get_data_model (confi, path);
 	if (dm != NULL)
 		{
-			ret = gdao_data_model_get_field_value_stringify_at (dm, 0, "value");
+			ret = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
 		}
 
 	return ret;
@@ -890,7 +880,7 @@ get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path)
 	                              priv->id_config,
 	                              idParent);
 
-	GdaDataModel *dm = gdao_query (priv->gdao, sql);
+	GdaDataModel *dm = gdaex_query (priv->gdaex, sql);
 	if (dm != NULL)
 		{
 			gint i, rows = gda_data_model_get_n_rows (dm);
@@ -900,11 +890,11 @@ get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path)
 					ConfiKey *ck = (ConfiKey *)g_malloc0 (sizeof (ConfiKey));
 
 					ck->id_config = priv->id_config;
-					ck->id = gdao_data_model_get_field_value_integer_at (dm, i, "id");
-					ck->id_parent = gdao_data_model_get_field_value_integer_at (dm, i, "id_parent");
-					ck->key = g_strdup (gdao_data_model_get_field_value_stringify_at (dm, i, "key"));
-					ck->value = g_strdup (gdao_data_model_get_field_value_stringify_at (dm, i, "value"));
-					ck->description = g_strdup (gdao_data_model_get_field_value_stringify_at (dm, i, "description"));
+					ck->id = gdaex_data_model_get_field_value_integer_at (dm, i, "id");
+					ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, i, "id_parent");
+					ck->key = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "key"));
+					ck->value = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "value"));
+					ck->description = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "description"));
 					ck->path = g_strdup (path);
 
 					newNode = g_node_append_data (parentNode, ck);
@@ -925,19 +915,19 @@ confi_set_property (GObject *object, guint property_id, const GValue *value, GPa
 		{
 			case PROP_NAME:
 				priv->name = g_strdup (g_value_get_string (value));
-				gdao_execute (priv->gdao, g_strdup_printf ("UPDATE configs "
+				gdaex_execute (priv->gdaex, g_strdup_printf ("UPDATE configs "
 				                                           "SET name = '%s' "
 				                                           "WHERE id = %d",
-				                                           gdao_strescape (priv->name, NULL),
+				                                           gdaex_strescape (priv->name, NULL),
 				                                           priv->id_config));
 				break;
 
 			case PROP_DESCRIPTION:
 				priv->description = g_strdup (g_value_get_string (value));
-				gdao_execute (priv->gdao, g_strdup_printf ("UPDATE configs "
+				gdaex_execute (priv->gdaex, g_strdup_printf ("UPDATE configs "
 				                                           "SET description = '%s' "
 				                                           "WHERE id = %d",
-				                                           gdao_strescape (priv->description, NULL),
+				                                           gdaex_strescape (priv->description, NULL),
 				                                           priv->id_config));
 				break;
 
@@ -996,7 +986,7 @@ confi_delete_id_from_db_values (Confi *confi, gint id)
 	                              priv->id_config,
 	                              id);
 
-	return (gdao_execute (priv->gdao, sql) >= 0);
+	return (gdaex_execute (priv->gdaex, sql) >= 0);
 }
 
 static gboolean
