@@ -16,7 +16,6 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include <libgdaex/libgdaex.h>
 #include <libconfi.h>
 
 gboolean
@@ -26,7 +25,7 @@ traverse_func (GNode *node,
 	ConfiKey *ck = (ConfiKey *)node->data;
 	if (ck->id != 0)
 		{
-			g_error ("%s%s%s\n", ck->path, strcmp (ck->path, "") == 0 ? "" : "/", ck->key);
+			g_printf ("%s%s%s\n", ck->path, strcmp (ck->path, "") == 0 ? "" : "/", ck->key);
 		}
 
 	return FALSE;
@@ -40,23 +39,29 @@ main (int argc, char **argv)
 
 	gda_init ();
 
-	confi = confi_new ("PostgreSQL://HOSTADDR=127.0.0.1;PORT=5432;DATABASE=confi;HOST=localhost;USER=postgres", "Default", NULL, FALSE);
-	if (confi == NULL)
+	if (argc < 2)
 		{
-			g_error ("Errore nell'inizializzazione della configurazione\n");
+			g_error ("Usage: test <connection string>");
 			return 0;
 		}
 
-	g_error ("Value from key \"folder/key1/key1_2\"\n%s\n\n", confi_path_get_value (confi, "folder/key1/key1_2"));
+	confi = confi_new (argv[1], "Default", NULL, FALSE);
+	if (confi == NULL)
+		{
+			g_error ("Error on configuration initialization.");
+			return 0;
+		}
 
-	g_error ("Traversing the entire tree\n");
+	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", confi_path_get_value (confi, "folder/key1/key1_2"));
+
+	g_printf ("Traversing the entire tree\n");
 	tree = confi_get_tree (confi);
 	g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
-	g_error ("\n");
+	g_printf ("\n");
 
-	g_error ("Setting root \"key2\"\n");
+	g_printf ("Setting root \"key2\"\n");
 	confi_set_root (confi, "key2");
-	g_error ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));
+	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));
 
 	confi_destroy (confi);
 

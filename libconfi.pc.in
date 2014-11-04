@@ -4,8 +4,8 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: @PACKAGE_NAME@
-Description: Library to manage configuration with libgdaobj
+Description: Library to manage configurations with libgdaex
 Version: @PACKAGE_VERSION@
-Requires: glib-2.0, libgdaobj
+Requires: libgdaex
 Libs: -L${libdir} -lconfi
 Cflags: -I${includedir}
