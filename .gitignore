@@ -52,3 +52,5 @@ Rules-quot
 tests/test
 *.csv
 gtk-doc.m4
+*.gir
+*.typelib

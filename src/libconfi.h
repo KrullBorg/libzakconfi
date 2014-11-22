@@ -19,10 +19,8 @@
 #ifndef __LIBCONFI_H__
 #define __LIBCONFI_H__
 
-#include <glib.h>
 #include <glib-object.h>
 
-#include <libgdaex/libgdaex.h>
 
 G_BEGIN_DECLS
 
@@ -59,7 +57,7 @@ typedef struct
 		      *path;
 	} ConfiKey;
 
-GType confi_get_type (void) G_GNUC_CONST;
+GType confi_get_type (void);
 
 Confi *confi_new (const gchar *cnc_string,
                   const gchar *name,

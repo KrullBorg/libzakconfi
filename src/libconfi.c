@@ -22,6 +22,8 @@
 
 #include <string.h>
 
+#include <libgdaex/libgdaex.h>
+
 #include "libconfi.h"
 
 enum
@@ -115,10 +117,10 @@ confi_init (Confi *confi)
  * @cnc_string: the connection string to use to connect to database that
  * contains configuration.
  * @name: configuration's name.
- * @root:
+ * @root: (nullable):
  * @create: whether create a config into database if @name doesn't exists.
  *
- * Returns: the newly created #Confi object, or NULL if it fails.
+ * Returns: (transfer none): the newly created #Confi object, or NULL if it fails.
  */
 Confi
 *confi_new (const gchar *cnc_string,
@@ -206,7 +208,7 @@ Confi
  * contains configuration.
  * @filter:
  *
- * Returns: a #GList of #Confi. If there's no configurations, returns a valid
+ * Returns: (element-type Confi) (transfer container):  a #GList of #Confi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
  */
 GList
