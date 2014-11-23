@@ -26,6 +26,37 @@
 
 #include "libconfi.h"
 
+
+ConfiKey
+*confi_key_copy (ConfiKey *key)
+{
+	ConfiKey *b;
+
+	b = g_slice_new (ConfiKey);
+	b->id_config = key->id_config;
+	b->id = key->id;
+	b->id_parent = key->id_parent;
+	b->key = g_strdup (key->key);
+	b->value = g_strdup (key->value);
+	b->description = g_strdup (key->description);
+	b->path = g_strdup (key->path);
+
+	return b;
+}
+
+void
+confi_key_free (ConfiKey *key)
+{
+	g_free (key->key);
+	g_free (key->value);
+	g_free (key->description);
+	g_free (key->path);
+	g_slice_free (ConfiKey, key);
+}
+
+G_DEFINE_BOXED_TYPE (ConfiKey, confi_key, confi_key_copy, confi_key_free)
+
+
 enum
 {
 	PROP_0,
@@ -61,9 +92,9 @@ struct _ConfiPrivate
 	{
 		GdaEx *gdaex;
 		gint id_config;
-		gchar *name,
-		      *description,
-		      *root;
+		gchar *name;
+		gchar *description;
+		gchar *root;
 		GHashTable *values;
 
 		gchar chrquot;
@@ -206,7 +237,7 @@ Confi
  * confi_get_configs_list:
  * @cnc_string: the connection string to use to connect to database that
  * contains configuration.
- * @filter:
+ * @filter: (nullable):
  *
  * Returns: (element-type Confi) (transfer container):  a #GList of #Confi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
@@ -216,7 +247,8 @@ GList
                          const gchar *filter)
 {
 	GList *lst = NULL;
-	gchar *sql, *where = "";
+	gchar *sql;
+	gchar *where = "";
 
 	GdaEx *gdaex = gdaex_new_from_string (cnc_string);
 
@@ -273,6 +305,7 @@ GList
  * confi_get_tree:
  * @confi: a #Confi object.
  *
+ * Returns: a #GNode.
  */
 GNode
 *confi_get_tree (Confi *confi)
@@ -559,11 +592,13 @@ confi_remove_path (Confi *confi, const gchar *path)
 gchar
 *confi_path_get_value (Confi *confi, const gchar *path)
 {
-	gchar *ret = NULL,
-	      *path_;
+	gchar *ret;
+	gchar *path_;
 	gpointer *gp;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+
+	ret = NULL;
 
 	path_ = path_normalize (confi, path);
 	if (path_ == NULL)
@@ -673,6 +708,7 @@ confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
  * @confi: a #Confi object.
  * @path: the key's path to get.
  *
+ * Returns: (transfer full): a #ConfiKey from @path
  */
 ConfiKey
 *confi_path_get_confi_key (Confi *confi, const gchar *path)

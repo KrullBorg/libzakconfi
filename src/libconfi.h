@@ -25,6 +25,26 @@
 G_BEGIN_DECLS
 
 
+#define CONFI_TYPE_KEY (confi_key_get_type ())
+
+GType confi_key_get_type ();
+
+typedef struct _ConfiKey ConfiKey;
+struct _ConfiKey
+	{
+		gint id_config;
+		gint id;
+		gint id_parent;
+		gchar *key;
+		gchar *value;
+		gchar *description;
+		gchar *path;
+	};
+
+ConfiKey *confi_key_copy (ConfiKey *key);
+void confi_key_free (ConfiKey *key);
+
+
 #define TYPE_CONFI                 (confi_get_type ())
 #define CONFI(obj)                 (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_CONFI, Confi))
 #define CONFI_CLASS(klass)         (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_CONFI, ConfiClass))
@@ -45,17 +65,6 @@ struct _ConfiClass
 	{
 		GObjectClass parent_class;
 	};
-
-typedef struct
-	{
-		gint id_config,
-		     id,
-		     id_parent;
-		gchar *key,
-		      *value,
-		      *description,
-		      *path;
-	} ConfiKey;
 
 GType confi_get_type (void);
 
