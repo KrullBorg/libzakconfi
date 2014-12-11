@@ -6,11 +6,15 @@ LIBS = $(LIBCONFI_LIBS)
 
 lib_LTLIBRARIES = libconfi.la
 
-libconfi_la_SOURCES = libconfi.c
+libconfi_la_SOURCES = libconfi.c \
+                      confipluggable.c
 
 libconfi_la_LDFLAGS = -no-undefined
 
-include_HEADERS = libconfi.h
+include_HEADERS = libconfi.h \
+                  confipluggable.h
+
+libconfi_includedir = $(includedir)/libconfi
 
 CLEANFILES =
 
