@@ -90,12 +90,12 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 gboolean
 confi_pluggable_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 {
-  ConfiPluggableInterface *iface;
+	ConfiPluggableInterface *iface;
 
-  g_return_if_fail (CONFI_IS_PLUGGABLE (pluggable));
+	g_return_value_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-  iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
-  g_return_if_fail (iface->initialize != NULL);
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_value_if_fail (iface->initialize != NULL, FALSE);
 
-  return iface->initialize (pluggable, cnc_string);
+	return iface->initialize (pluggable, cnc_string);
 }
