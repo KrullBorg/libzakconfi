@@ -16,6 +16,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <libpeas/peas.h>
 #include <libconfi.h>
 
 gboolean
@@ -34,7 +35,9 @@ traverse_func (GNode *node,
 int
 main (int argc, char **argv)
 {
+	PeasEngine *engine;
 	Confi *confi;
+	GList *confis;
 	GNode *tree;
 
 	gda_init ();
@@ -45,7 +48,23 @@ main (int argc, char **argv)
 			return 0;
 		}
 
-	confi = confi_new (argv[1], "Default", NULL, FALSE);
+	engine = peas_engine_get_default ();
+	peas_engine_add_search_path (engine, "./plugins", NULL);
+
+	confis = confi_get_configs_list (argv[1], NULL);
+	while (confis)
+		{
+			ConfiConfi *confi = (ConfiConfi *)confis->data;
+
+			if (confi == NULL) break;
+
+			g_printf ("NAME: %s\nDESCRIPTION: %s\n\n",
+			          confi->name,
+			          confi->description);
+			confis = g_list_next (confis);
+		}
+
+	/*confi = confi_new (argv[1], "Default", NULL, FALSE);
 	if (confi == NULL)
 		{
 			g_error ("Error on configuration initialization.");
@@ -63,7 +82,7 @@ main (int argc, char **argv)
 	confi_set_root (confi, "key2");
 	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));
 
-	confi_destroy (confi);
+	confi_destroy (confi);*/
 
 	return 0;
 }

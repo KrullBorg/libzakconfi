@@ -23,9 +23,33 @@
 #include <string.h>
 
 #include <libgdaex/libgdaex.h>
+#include <libpeas/peas.h>
 
 #include "libconfi.h"
+#include "confipluggable.h"
 
+
+ConfiConfi
+*confi_confi_copy (ConfiConfi *confi)
+{
+	ConfiConfi *b;
+
+	b = g_slice_new (ConfiConfi);
+	b->name = g_strdup (confi->name);
+	b->description = g_strdup (confi->description);
+
+	return b;
+}
+
+void
+confi_confi_free (ConfiConfi *confi)
+{
+	g_free (confi->name);
+	g_free (confi->description);
+	g_slice_free (ConfiConfi, confi);
+}
+
+G_DEFINE_BOXED_TYPE (ConfiConfi, confi_confi, confi_confi_copy, confi_confi_free)
 
 ConfiKey
 *confi_key_copy (ConfiKey *key)
@@ -98,6 +122,9 @@ struct _ConfiPrivate
 		GHashTable *values;
 
 		gchar chrquot;
+
+		PeasPluginInfo *ppinfo;
+		ConfiPluggable *pluggable;
 	};
 
 G_DEFINE_TYPE (Confi, confi, G_TYPE_OBJECT)
@@ -143,91 +170,80 @@ confi_init (Confi *confi)
 {
 }
 
+ConfiPluggable
+*confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string)
+{
+	ConfiPluggable *pluggable;
+
+	const GList *lst_plugins;
+
+	pluggable = NULL;
+
+	PeasEngine *peas_engine;
+
+	peas_engine = peas_engine_get_default ();
+	if (peas_engine == NULL)
+		{
+			return NULL;
+		}
+
+	lst_plugins = peas_engine_get_plugin_list (peas_engine);
+	while (lst_plugins)
+		{
+			PeasPluginInfo *ppinfo;
+			gchar *uri;
+
+			ppinfo = (PeasPluginInfo *)lst_plugins->data;
+
+			uri = g_strdup_printf ("%s://", peas_plugin_info_get_module_name (ppinfo));
+			if (g_str_has_prefix (cnc_string, uri))
+				{
+					if (peas_engine_load_plugin (peas_engine, ppinfo))
+						{
+							PeasExtension *ext;
+							ext = peas_engine_create_extension (peas_engine, ppinfo, CONFI_TYPE_PLUGGABLE,
+							                                    "cnc_string", cnc_string + strlen (uri),
+							                                    NULL);
+							pluggable = (ConfiPluggable *)ext;
+							break;
+						}
+				}
+			g_free (uri);
+
+			lst_plugins = g_list_next (lst_plugins);
+		}
+
+	if (pluggable == NULL)
+		{
+			g_warning ("No plugin found for connection string \"%s\".", cnc_string);
+		}
+
+	return pluggable;
+}
+
 /**
  * confi_new:
- * @cnc_string: the connection string to use to connect to database that
- * contains configuration.
- * @name: configuration's name.
- * @root: (nullable):
- * @create: whether create a config into database if @name doesn't exists.
+ * @cnc_string: the connection string.
  *
  * Returns: (transfer none): the newly created #Confi object, or NULL if it fails.
  */
 Confi
-*confi_new (const gchar *cnc_string,
-            const gchar *name,
-            const gchar *root,
-            gboolean create)
+*confi_new (const gchar *cnc_string)
 {
-	if (name == NULL) return NULL;
+	Confi *confi;
+	ConfiPrivate *priv;
+	ConfiPluggable *pluggable;
 
-	GdaDataModel *dm;
-	gchar *sql;
-	gint id = 0;
+	g_return_val_if_fail (cnc_string != NULL, NULL);
 
-	Confi *confi = CONFI (g_object_new (confi_get_type (), NULL));
+	confi = NULL;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	priv->gdaex = gdaex_new_from_string (cnc_string);
-	if (priv->gdaex == NULL)
+	pluggable = confi_get_confi_pluggable_from_cnc_string (cnc_string);
+	if (pluggable != NULL)
 		{
-			/* TO DO */
-			return NULL;
-		}
-
-	priv->chrquot = gdaex_get_chr_quoting (priv->gdaex);
-
-	/* check if config exists */
-	sql = g_strdup_printf ("SELECT id, name FROM configs WHERE name = '%s'",
-	                       gdaex_strescape (name, NULL));
-	dm = gdaex_query (priv->gdaex, sql);
-	if (dm == NULL || gda_data_model_get_n_rows (dm) == 0)
-		{
-			if (create)
-				{
-						/* saving a new config into database */
-						if (dm != NULL)
-							{
-								g_object_unref (dm);
-							}
-
-						dm = gdaex_query (priv->gdaex, "SELECT MAX(id) FROM configs");
-						if (dm != NULL)
-							{
-								id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
-							}
-						id++;
-
-						if (gdaex_execute (priv->gdaex, g_strdup_printf ("INSERT INTO configs "
-							                                             "(id, name, description) "
-							                                             "VALUES (%d, '%s', '')",
-							                                             id, gdaex_strescape (name, NULL))) == -1)
-							{
-								return NULL;
-							}
-				}
-			else
-				{
-					/* TO DO */
-					return NULL;
-				}
-		}
-	else
-		{
-			id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
-		}
-
-	g_object_set (G_OBJECT (confi),
-	              "name", name,
-	              "root", root,
-	              NULL);
-	priv->id_config = id;
-	priv->values = g_hash_table_new (g_str_hash, g_str_equal);
-
-	if (dm != NULL)
-		{
-			g_object_unref (dm);
+			confi = CONFI (g_object_new (confi_get_type (), NULL));
+			priv = CONFI_GET_PRIVATE (confi);
+			priv->pluggable = pluggable;
 		}
 
 	return confi;
@@ -246,57 +262,17 @@ GList
 *confi_get_configs_list (const gchar *cnc_string,
                          const gchar *filter)
 {
-	GList *lst = NULL;
-	gchar *sql;
-	gchar *where = "";
+	ConfiPluggable *pluggable;
+	GList *lst;
 
-	GdaEx *gdaex = gdaex_new_from_string (cnc_string);
+	lst = NULL;
 
-	if (gdaex == NULL)
+	pluggable = confi_get_confi_pluggable_from_cnc_string (cnc_string);
+
+	if (pluggable != NULL)
 		{
-			return NULL;
+			lst = confi_pluggable_get_configs_list (pluggable, filter);
 		}
-
-	if (filter != NULL && strcmp (g_strstrip (g_strdup (filter)), "") != 0)
-		{
-			where = g_strdup_printf (" WHERE name LIKE '%s'", filter);
-		}
-
-	sql = g_strdup_printf ("SELECT * FROM configs%s", where);
-
-	GdaDataModel *dmConfigs = gdaex_query (gdaex, sql);
-	if (dmConfigs != NULL)
-		{
-			gint row, id,
-			     rows = gda_data_model_get_n_rows (dmConfigs);
-			Confi *confi;
-			ConfiPrivate *priv;
-
-			if (rows > 0)
-				{
-					for (row = 0; row < rows; row++)
-						{
-							confi = confi_new (cnc_string,
-							                   gdaex_data_model_get_field_value_stringify_at (dmConfigs, row, "name"),
-							                   NULL, FALSE);
-
-							priv = CONFI_GET_PRIVATE (confi);
-							priv->id_config = gdaex_data_model_get_field_value_integer_at (dmConfigs, row, "id");
-
-							g_object_set (G_OBJECT (confi),
-							              "description", gdaex_data_model_get_field_value_stringify_at (dmConfigs, row, "description"),
-							              NULL);
-
-							lst = g_list_append (lst, confi);
-						}
-				}
-			else
-				{
-					lst = g_list_append (lst, NULL);
-				}
-		}
-
-	gdaex_free (gdaex);
 
 	return lst;
 }

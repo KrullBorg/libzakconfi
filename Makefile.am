@@ -1,6 +1,6 @@
 DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc --enable-introspection
 
-SUBDIRS = src tests data docs
+SUBDIRS = src plugins tests data docs
 
 EXTRA_DIST = libconfi.pc.in
 

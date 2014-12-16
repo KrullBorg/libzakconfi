@@ -1,0 +1,8 @@
+[Plugin]
+Module=db
+Name=DB
+Description=Inserts a box containing "Hello World" in every windows.
+Authors=Andrea Zagli <azagli@libero.it>
+Copyright=Copyright © 2014 Andrea Zagli
+Website=http://saetta.ns0.it/
+Help=http://saetta.ns0.it/

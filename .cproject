@@ -24,10 +24,12 @@
 							</tool>
 							<tool id="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.autogen.392743236" name="autogen.sh" superClass="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.autogen"/>
 							<tool id="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gcc.1618546228" name="GCC C Compiler" superClass="org.eclipse.linuxtools.cdt.autotools.core.toolchain.tool.gcc">
-								<option id="gnu.c.compiler.option.include.paths.1467657593" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.1467657593" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;C:\msys32\mingw32\include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\msys32\mingw32\include\glib-2.0&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\msys32\mingw32\include\libxml2&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\msys32\mingw32\include\libpeas-1.0&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\msys32\mingw32\include\libgda-5.0&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1742788074" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

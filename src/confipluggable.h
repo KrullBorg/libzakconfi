@@ -55,6 +55,8 @@ struct _ConfiPluggableInterface {
 
 	/* Virtual public methods */
 	gboolean (*initialize) (ConfiPluggable *pluggable, const gchar *cnc_string);
+	GList *(*get_configs_list) (ConfiPluggable *pluggable,
+	                            const gchar *filter);
 };
 
 /*
@@ -63,6 +65,9 @@ struct _ConfiPluggableInterface {
 GType confi_pluggable_get_type (void) G_GNUC_CONST;
 
 gboolean confi_pluggable_initialize (ConfiPluggable *pluggable, const gchar *cnc_string);
+
+GList *confi_pluggable_get_configs_list (ConfiPluggable *pluggable,
+                                         const gchar *filter);
 
 G_END_DECLS
 

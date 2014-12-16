@@ -42,6 +42,17 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 	if (!initialized)
 		{
 			/**
+			* ConfiPluggable:cnc_string:
+			*
+			*/
+			g_object_interface_install_property (iface,
+			                                     g_param_spec_string ("cnc_string",
+			                                                          "Connection string",
+			                                                          "Connection string",
+			                                                          "",
+			                                                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
+			/**
 			* ConfiPluggable:name:
 			*
 			*/
@@ -79,7 +90,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 }
 
 /**
- * confi_pluggable_activate:
+ * confi_pluggable_initialize:
  * @pluggable: A #ConfiPluggable.
  * @cnc_string: The connection string.
  *
@@ -98,4 +109,25 @@ confi_pluggable_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 	g_return_val_if_fail (iface->initialize != NULL, FALSE);
 
 	return iface->initialize (pluggable, cnc_string);
+}
+
+/**
+ * confi_pluggable_get_configs_list:
+ * @pluggable: A #ConfiPluggable.
+ * @filter: (nullable):
+ *
+ * Returns: (element-type ConfiConfi) (transfer container): a #GList of #ConfiConfi. If there's no configurations, returns a valid
+ * #GList but with a unique NULL element.
+*/
+GList
+*confi_pluggable_get_configs_list (ConfiPluggable *pluggable, const gchar *filter)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->get_configs_list != NULL, FALSE);
+
+	return iface->get_configs_list (pluggable, filter);
 }

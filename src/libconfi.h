@@ -25,6 +25,20 @@
 G_BEGIN_DECLS
 
 
+#define CONFI_TYPE_CONFI (confi_confi_get_type ())
+
+GType confi_confi_get_type ();
+
+typedef struct _ConfiConfi ConfiConfi;
+struct _ConfiConfi
+	{
+		gchar *name;
+		gchar *description;
+	};
+
+ConfiConfi *confi_confi_copy (ConfiConfi *confi);
+void confi_confi_free (ConfiConfi *confi);
+
 #define CONFI_TYPE_KEY (confi_key_get_type ())
 
 GType confi_key_get_type ();
@@ -68,10 +82,7 @@ struct _ConfiClass
 
 GType confi_get_type (void);
 
-Confi *confi_new (const gchar *cnc_string,
-                  const gchar *name,
-                  const gchar *root,
-                  gboolean create);
+Confi *confi_new (const gchar *cnc_string);
 
 GList *confi_get_configs_list (const gchar *cnc_string,
                                const gchar *filter);
