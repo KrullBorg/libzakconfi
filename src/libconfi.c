@@ -102,6 +102,8 @@ static void confi_get_property (GObject *object,
                                 GValue *value,
                                 GParamSpec *pspec);
 
+static ConfiPluggable *confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string);
+
 static gchar *path_normalize (Confi *confi, const gchar *path);
 static GdaDataModel *path_get_data_model (Confi *confi, const gchar *path);
 static gchar *path_get_value_from_db (Confi *confi, const gchar *path);
@@ -170,7 +172,7 @@ confi_init (Confi *confi)
 {
 }
 
-ConfiPluggable
+static ConfiPluggable
 *confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string)
 {
 	ConfiPluggable *pluggable;
@@ -255,7 +257,7 @@ Confi
  * contains configuration.
  * @filter: (nullable):
  *
- * Returns: (element-type Confi) (transfer container):  a #GList of #Confi. If there's no configurations, returns a valid
+ * Returns: (element-type Confi) (transfer container):  a #GList of #ConfiConfi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
  */
 GList
@@ -291,7 +293,7 @@ GNode
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	ConfiKey *ck = (ConfiKey *)g_malloc0 (sizeof (ConfiKey));
+	ConfiKey *ck = g_new0 (ConfiKey, 1);
 
 	ck->id_config = priv->id_config;
 	ck->id = 0;
@@ -782,8 +784,8 @@ confi_destroy (Confi *confi)
 static gchar
 *path_normalize (Confi *confi, const gchar *path)
 {
-	gchar *ret,
-	      *lead;
+	gchar *ret;
+	gchar *lead;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
@@ -809,6 +811,7 @@ static gchar
 				{
 					lead = g_strdup (ret + 1);
 					ret = g_strchug (lead);
+					g_free (lead);
 				}
 			else
 				{
@@ -824,8 +827,11 @@ static gchar
 static GdaDataModel
 *path_get_data_model (Confi *confi, const gchar *path)
 {
-	gchar **tokens, *sql, *token;
-	gint i = 0, id_parent = 0;
+	gchar **tokens;
+	gchar *sql;
+	gchar *token;
+	guint i;
+	guint id_parent;
 	GdaDataModel *dm = NULL;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
@@ -835,6 +841,8 @@ static GdaDataModel
 	tokens = g_strsplit (path, "/", 0);
 	if (tokens == NULL) return NULL;
 
+	i = 0;
+	id_parent = 0;
 	while (tokens[i] != NULL)
 		{
 			token = g_strstrip (g_strdup (tokens[i]));
@@ -855,10 +863,15 @@ static GdaDataModel
 						{
 							/* TO DO */
 							g_warning ("Unable to find key «%s».", token);
-							dm = NULL;
+							if (dm != NULL)
+								{
+									g_object_unref (dm);
+									dm = NULL;
+								}
 							break;
 						}
 					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
+					g_free (sql);
 				}
 
 			i++;
@@ -870,13 +883,16 @@ static GdaDataModel
 static gchar
 *path_get_value_from_db (Confi *confi, const gchar *path)
 {
-	gchar *ret = NULL;
+	gchar *ret;
 	GdaDataModel *dm;
+
+	ret = NULL;
 
 	dm = path_get_data_model (confi, path);
 	if (dm != NULL)
 		{
 			ret = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
+			g_object_unref (dm);
 		}
 
 	return ret;
@@ -885,23 +901,30 @@ static gchar
 static void
 get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path)
 {
+	gchar *sql;
+	GdaDataModel *dm;
+
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	gchar *sql = g_strdup_printf ("SELECT * FROM %cvalues%c "
+	sql = g_strdup_printf ("SELECT * FROM %cvalues%c "
 	                              "WHERE id_configs = %d AND "
 	                              "id_parent = %d",
 	                              priv->chrquot, priv->chrquot,
 	                              priv->id_config,
 	                              idParent);
 
-	GdaDataModel *dm = gdaex_query (priv->gdaex, sql);
+	dm = gdaex_query (priv->gdaex, sql);
+	g_free (sql);
 	if (dm != NULL)
 		{
-			gint i, rows = gda_data_model_get_n_rows (dm);
+			guint i;
+			guint rows;
+
+			rows = gda_data_model_get_n_rows (dm);
 			for (i = 0; i < rows; i++)
 				{
 					GNode *newNode;
-					ConfiKey *ck = (ConfiKey *)g_malloc0 (sizeof (ConfiKey));
+					ConfiKey *ck = g_new0 (ConfiKey, 1);
 
 					ck->id_config = priv->id_config;
 					ck->id = gdaex_data_model_get_field_value_integer_at (dm, i, "id");
@@ -915,34 +938,40 @@ get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path)
 
 					get_children (confi, newNode, ck->id, g_strconcat (path, (strcmp (path, "") == 0 ? "" : "/"), ck->key, NULL));
 				}
+			g_object_unref (dm);
 		}
 }
 
 static void
 confi_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
-	Confi *confi = CONFI (object);
+	gchar *sql;
 
+	Confi *confi = CONFI (object);
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
 	switch (property_id)
 		{
 			case PROP_NAME:
 				priv->name = g_strdup (g_value_get_string (value));
-				gdaex_execute (priv->gdaex, g_strdup_printf ("UPDATE configs "
-				                                           "SET name = '%s' "
-				                                           "WHERE id = %d",
-				                                           gdaex_strescape (priv->name, NULL),
-				                                           priv->id_config));
+				sql = g_strdup_printf ("UPDATE configs "
+				                       "SET name = '%s' "
+				                       "WHERE id = %d",
+				                       gdaex_strescape (priv->name, NULL),
+				                       priv->id_config);
+				gdaex_execute (priv->gdaex, sql);
+				g_free (sql);
 				break;
 
 			case PROP_DESCRIPTION:
 				priv->description = g_strdup (g_value_get_string (value));
-				gdaex_execute (priv->gdaex, g_strdup_printf ("UPDATE configs "
-				                                           "SET description = '%s' "
-				                                           "WHERE id = %d",
-				                                           gdaex_strescape (priv->description, NULL),
-				                                           priv->id_config));
+				sql = g_strdup_printf ("UPDATE configs "
+				                       "SET description = '%s' "
+				                       "WHERE id = %d",
+				                       gdaex_strescape (priv->description, NULL),
+				                       priv->id_config);
+				gdaex_execute (priv->gdaex, sql);
+				g_free (sql);
 				break;
 
 			case PROP_ROOT:
@@ -959,7 +988,6 @@ static void
 confi_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
 	Confi *confi = CONFI (object);
-
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
 	switch (property_id)
@@ -989,7 +1017,7 @@ confi_get_property (GObject *object, guint property_id, GValue *value, GParamSpe
 static gboolean
 confi_delete_id_from_db_values (Confi *confi, gint id)
 {
-	gboolean ret = FALSE;
+	gboolean ret;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
@@ -1000,7 +1028,16 @@ confi_delete_id_from_db_values (Confi *confi, gint id)
 	                              priv->id_config,
 	                              id);
 
-	return (gdaex_execute (priv->gdaex, sql) >= 0);
+	if (gdaex_execute (priv->gdaex, sql) >= 0)
+		{
+			ret = TRUE;
+		}
+	else
+		{
+			ret = FALSE;
+		}
+	g_free (sql);
+	return ret;
 }
 
 static gboolean
