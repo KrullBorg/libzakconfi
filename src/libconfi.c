@@ -366,22 +366,31 @@ ConfiKey
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
 	gint id_parent;
-	gchar *parent_ = g_strstrip (g_strdup (parent)),
-	      *key_ = g_strstrip (g_strdup (key));
-	if (strcmp (parent_, "") == 0)
+	gchar *parent_;
+	gchar *key_;
+
+	if (parent == NULL)
 		{
 			id_parent = 0;
 		}
 	else
 		{
-			dmParent = path_get_data_model (confi, path_normalize (confi, parent_));
-			if (dmParent == NULL)
+			parent_ = g_strstrip (g_strdup (parent));
+			if (strcmp (parent_, "") == 0)
 				{
-					id_parent = -1;
+					id_parent = 0;
 				}
 			else
 				{
-					id_parent = gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id");
+					dmParent = path_get_data_model (confi, path_normalize (confi, parent_));
+					if (dmParent == NULL)
+						{
+							id_parent = -1;
+						}
+					else
+						{
+							id_parent = gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id");
+						}
 				}
 		}
 
@@ -404,6 +413,8 @@ ConfiKey
 				}
 			id++;
 
+			key_ = g_strstrip (g_strdup (key));
+
 			sql = g_strdup_printf ("INSERT INTO %cvalues%c "
 			                       "(id_configs, id, id_parent, %ckey%c, value) "
 			                       "VALUES (%d, %d, %d, '%s', '%s')",
@@ -420,7 +431,7 @@ ConfiKey
 					return NULL;
 				}
 
-			ck = (ConfiKey *)g_malloc0 (sizeof (ConfiKey));
+			ck = g_new0 (ConfiKey, 1);
 			ck->id_config = priv->id_config;
 			ck->id = id;
 			ck->id_parent = id_parent;
@@ -435,7 +446,10 @@ ConfiKey
 				{
 					ck->path = g_strdup (parent_);
 				}
+
+			g_free (key_);
 		}
+	g_free (parent_);
 
 	return ck;
 }
@@ -452,18 +466,19 @@ ConfiKey
 ConfiKey
 *confi_add_key_with_value (Confi *confi, const gchar *parent, const gchar *key, const gchar *value)
 {
+	gchar *path;
+
 	ConfiKey *ck = confi_add_key (confi, parent, key);
 
 	if (ck != NULL)
 		{
-			gchar *path = "";
 			if (ck->id_parent != 0)
 				{
 					path = g_strconcat (ck->path, "/", key, NULL);
 				}
 			else
 				{
-					path = ck->key;
+					path = g_strdup (ck->key);
 				}
 
 			if (!confi_path_set_value (confi, path, value))
@@ -474,6 +489,7 @@ ConfiKey
 				{
 					ck->value = g_strdup (value);
 				}
+			g_free (path);
 		}
 
 	return ck;
@@ -489,11 +505,12 @@ gboolean
 confi_key_set_key (Confi *confi,
                    ConfiKey *ck)
 {
-	gboolean ret = FALSE;
+	gboolean ret;
+	gchar *sql;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	gchar *sql = g_strdup_printf ("UPDATE %cvalues%c SET "
+	sql = g_strdup_printf ("UPDATE %cvalues%c SET "
 	                              "%ckey%c = '%s', value = '%s', description = '%s' "
 	                              "WHERE id_configs = %d "
 	                              "AND id = %d",
@@ -506,6 +523,7 @@ confi_key_set_key (Confi *confi,
 	                              ck->id);
 
 	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
+	g_free (sql);
 
 	return ret;
 }
@@ -619,14 +637,17 @@ gchar
 gboolean
 confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 {
-	gboolean ret = FALSE;
+	gchar *sql;
+	gboolean ret;
+
 	GdaDataModel *dm = path_get_data_model (confi, path_normalize (confi, path));
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
+	ret = FALSE;
 	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
 		{
-			gchar *sql = g_strdup_printf ("UPDATE %cvalues%c SET value = '%s' "
+			sql = g_strdup_printf ("UPDATE %cvalues%c SET value = '%s' "
 			                              "WHERE id_configs = %d "
 			                              "AND id = %d ",
 			                              priv->chrquot, priv->chrquot,
@@ -634,6 +655,7 @@ confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 			                              priv->id_config,
 			                              gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
 			ret = (gdaex_execute (priv->gdaex, sql) >= 0);
+			g_free (sql);
 		}
 	else
 		{
@@ -657,7 +679,8 @@ confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 gboolean
 confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 {
-	gboolean ret = TRUE;
+	gboolean ret;
+	gchar *sql;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
@@ -667,7 +690,8 @@ confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 	GdaDataModel *dmParent = path_get_data_model (confi, path_normalize (confi, parent));
 	if (dmParent == NULL) return FALSE;
 
-	gchar *sql = g_strdup_printf ("UPDATE %cvalues%c "
+	ret = TRUE;
+	sql = g_strdup_printf ("UPDATE %cvalues%c "
 	                              "SET id_parent = %d "
 	                              "WHERE id_configs = %d "
 	                              "AND id = %d",
@@ -677,6 +701,7 @@ confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 	                              gdaex_data_model_get_field_value_integer_at (dmPath, 0, "id"));
 
 	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
+	g_free (sql);
 
 	return ret;
 }
@@ -705,6 +730,10 @@ ConfiKey
 	GdaDataModel *dm = path_get_data_model (confi, path_);
 	if (dm == NULL || gda_data_model_get_n_rows (dm) <= 0)
 		{
+			if (dm != NULL)
+				{
+					g_object_unref (dm);
+				}
 			return NULL;
 		}
 
@@ -734,22 +763,27 @@ ConfiKey
 gboolean
 confi_remove (Confi *confi)
 {
-	gboolean ret = TRUE;
+	gboolean ret;
+	gchar *sql;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	if (gdaex_execute (priv->gdaex,
-	                   g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
-	                                   priv->chrquot, priv->chrquot,
-	                                   priv->id_config)) == -1)
+	ret = TRUE;
+	sql = g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
+                           priv->chrquot,
+                           priv->chrquot,
+                           priv->id_config);
+	if (gdaex_execute (priv->gdaex, sql) == -1)
 		{
+			g_free (sql);
 			ret = FALSE;
 		}
 	else 
 		{
-			if (gdaex_execute (priv->gdaex,
-			                   g_strdup_printf ("DELETE FROM configs WHERE id = %d",
-			                                    priv->id_config)) == -1)
+			g_free (sql);
+			sql = g_strdup_printf ("DELETE FROM configs WHERE id = %d",
+			                       priv->id_config);
+			if (gdaex_execute (priv->gdaex, sql) == -1)
 				{
 					ret = FALSE;
 				}
@@ -784,8 +818,10 @@ confi_destroy (Confi *confi)
 static gchar
 *path_normalize (Confi *confi, const gchar *path)
 {
-	gchar *ret;
-	gchar *lead;
+	GString *ret;
+	gchar *strret;
+
+	guint lead;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
@@ -794,34 +830,37 @@ static gchar
 			return NULL;
 		}
 
-	ret = g_strstrip (g_strdup (path));
-	if (strcmp (ret, "") == 0)
+	ret = g_string_new (path);
+	g_strstrip (ret->str);
+	if (g_strcmp0 (ret->str, "") == 0)
 		{
 			return NULL;
 		}
-	else if (ret[strlen (ret) - 1] == '/')
+	else if (ret->str[strlen (ret->str) - 1] == '/')
 		{
 			return NULL;
 		}
 
 	/* removing leading '/' */
-	for (;;)
+	lead = 0;
+	for (lead = 0; lead < ret->len; lead++)
 		{
-			if (ret[0] == '/')
-				{
-					lead = g_strdup (ret + 1);
-					ret = g_strchug (lead);
-					g_free (lead);
-				}
-			else
+			if (ret->str[lead] != '/')
 				{
 					break;
 				}
 		}
 
-	ret = g_strconcat (priv->root, ret, NULL);
+	if (lead < ret->len)
+		{
+			g_string_erase (ret, 0, lead++);
+		}
+	g_string_prepend (ret, priv->root);
 
-	return ret;
+	strret = g_strdup (ret->str);
+	g_string_free (ret, TRUE);
+
+	return strret;
 }
 
 static GdaDataModel
@@ -859,6 +898,7 @@ static GdaDataModel
 					                       priv->chrquot, priv->chrquot,
 					                       gdaex_strescape (token, NULL));
 					dm = gdaex_query (priv->gdaex, sql);
+					g_free (sql);
 					if (dm == NULL || gda_data_model_get_n_rows (dm) != 1)
 						{
 							/* TO DO */
@@ -871,7 +911,6 @@ static GdaDataModel
 							break;
 						}
 					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
-					g_free (sql);
 				}
 
 			i++;
@@ -1018,10 +1057,11 @@ static gboolean
 confi_delete_id_from_db_values (Confi *confi, gint id)
 {
 	gboolean ret;
+	gchar *sql;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	gchar *sql = g_strdup_printf ("DELETE FROM %cvalues%c "
+	sql = g_strdup_printf ("DELETE FROM %cvalues%c "
 	                              "WHERE id_configs = %d "
 	                              "AND id = %d",
 	                              priv->chrquot, priv->chrquot,
@@ -1037,6 +1077,7 @@ confi_delete_id_from_db_values (Confi *confi, gint id)
 			ret = FALSE;
 		}
 	g_free (sql);
+
 	return ret;
 }
 
