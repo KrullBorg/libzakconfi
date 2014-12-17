@@ -265,6 +265,33 @@ gchar
 }
 
 /**
+ * confi_set_root:
+ * @confi: a #Confi object.
+ * @root: the root.
+ *
+ */
+gboolean
+confi_set_root (Confi *confi, const gchar *root)
+{
+	gboolean ret;
+
+	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+
+	if (priv->pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			ret = FALSE;
+		}
+	else
+		{
+			g_object_set (priv->pluggable, "root", root, NULL);
+			ret = TRUE;
+		}
+
+	return ret;
+}
+
+/**
  * confi_add_key:
  * @confi: a #Confi object.
  * @parent: the path where add the key.

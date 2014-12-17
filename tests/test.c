@@ -94,9 +94,10 @@ main (int argc, char **argv)
 	g_printf ("Value: %s\n", ck->value);
 	g_printf ("\n");
 
-	/*g_printf ("Setting root \"key2\"\n");
-	confi_set_root (confi, "key2");
-	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));*/
+	g_printf ("Setting root \"folder/key2\"\n");
+	confi_set_root (confi, "folder/key2");
+	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));
+	g_printf ("Value from key \"folder/key1/key1_2\" (expected null) %s\n", confi_path_get_value (confi, "folder/key1/key1_2"));
 
 	confi_destroy (confi);
 

@@ -59,6 +59,7 @@ GList *confi_get_configs_list (const gchar *cnc_string,
 GNode *confi_get_tree (Confi *confi);
 
 gchar *confi_normalize_root (const gchar *root);
+gboolean confi_set_root (Confi *confi, const gchar *root);
 
 ConfiKey *confi_add_key (Confi *confi,
                          const gchar *parent,
