@@ -26,7 +26,6 @@
 #include <libpeas/peas.h>
 
 #include "libconfi.h"
-#include "confipluggable.h"
 
 
 ConfiConfi
@@ -104,9 +103,6 @@ static void confi_get_property (GObject *object,
 
 static ConfiPluggable *confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string);
 
-static gchar *path_normalize (Confi *confi, const gchar *path);
-static GdaDataModel *path_get_data_model (Confi *confi, const gchar *path);
-static gchar *path_get_value_from_db (Confi *confi, const gchar *path);
 static void get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path);
 static gboolean confi_delete_id_from_db_values (Confi *confi, gint id);
 static gboolean confi_remove_path_traverse_func (GNode *node, gpointer data);
@@ -125,7 +121,6 @@ struct _ConfiPrivate
 
 		gchar chrquot;
 
-		PeasPluginInfo *ppinfo;
 		ConfiPluggable *pluggable;
 	};
 
@@ -170,6 +165,9 @@ confi_class_init (ConfiClass *klass)
 static void
 confi_init (Confi *confi)
 {
+	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+
+	priv->pluggable = NULL;
 }
 
 static ConfiPluggable
@@ -308,45 +306,47 @@ GNode
 }
 
 /**
- * confi_set_root:
+ * confi_normalize_set_root:
  * @confi: a #Confi object.
  * @root: the root.
  *
+ * Returns: a correct value for root property.
  */
-gboolean
-confi_set_root (Confi *confi, const gchar *root)
+gchar
+*confi_normalize_root (const gchar *root)
 {
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	gchar *root_;
+	GString *root_;
+	gchar *strret;
 
 	if (root == NULL)
 		{
-			root_ = g_strdup ("/");
+			root_ = g_string_new ("/");
 		}
 	else
 		{
-			root_ = g_strstrip (g_strdup (root));
-			if (strcmp (root_, "") == 0)
+			root_ = g_string_new (root);
+			g_strstrip (root_->str);
+			if (g_strcmp0 (root_->str, "") == 0)
 				{
-					root_ = g_strdup ("/");
+					g_string_printf (root_, "/");
 				}
 			else
 				{
-					if (root_[0] != '/')
+					if (root_->str[0] != '/')
 						{
-							root_ = g_strconcat ("/", root_, NULL);
+							g_string_prepend (root_, "/");
 						}
-					if (root_[strlen (root_) - 1] != '/')
+					if (root_->str[root_->len - 1] != '/')
 						{
-							root_ = g_strconcat (root_, "/", NULL);
+							g_string_append (root_, "/");
 						}
 				}
 		}
 
-	priv->root = root_;
+	strret = g_strdup (root_->str);
+	g_string_free (root_, TRUE);
 
-	return TRUE;
+	return strret;
 }
 
 /**
@@ -382,7 +382,7 @@ ConfiKey
 				}
 			else
 				{
-					dmParent = path_get_data_model (confi, path_normalize (confi, parent_));
+					//dmParent = path_get_data_model (confi, path_normalize (confi, parent_));
 					if (dmParent == NULL)
 						{
 							id_parent = -1;
@@ -543,7 +543,7 @@ confi_remove_path (Confi *confi, const gchar *path)
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	dm = path_get_data_model (confi, path_normalize (confi, path));
+	//dm = path_get_data_model (confi, path_normalize (confi, path));
 
 	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
 		{
@@ -589,39 +589,17 @@ gchar
 *confi_path_get_value (Confi *confi, const gchar *path)
 {
 	gchar *ret;
-	gchar *path_;
-	gpointer *gp;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	ret = NULL;
-
-	path_ = path_normalize (confi, path);
-	if (path_ == NULL)
+	if (priv->pluggable == NULL)
 		{
-			return NULL;
-		}
-
-	gp = g_hash_table_lookup (priv->values, (gconstpointer)path_);
-
-	if (gp == NULL)
-		{
-			/* load value from db if path exists */
-			ret = path_get_value_from_db (confi, path_);
-
-			if (ret != NULL)
-				{
-					/* and insert it on values */
-					g_hash_table_insert (priv->values, (gpointer)path_, (gpointer)ret);
-				}
-			else
-				{
-					/* TO DO */
-				}
+			g_warning ("Not initialized.");
+			ret = NULL;
 		}
 	else
 		{
-			ret = g_strdup ((gchar *)gp);
+			ret = confi_pluggable_path_get_value (priv->pluggable, path);
 		}
 
 	return ret;
@@ -637,10 +615,11 @@ gchar
 gboolean
 confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 {
+	GdaDataModel *dm;
 	gchar *sql;
 	gboolean ret;
 
-	GdaDataModel *dm = path_get_data_model (confi, path_normalize (confi, path));
+	//dm = path_get_data_model (confi, path_normalize (confi, path));
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
@@ -679,15 +658,18 @@ confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 gboolean
 confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 {
+	GdaDataModel *dmPath;
+	GdaDataModel *dmParent;
+
 	gboolean ret;
 	gchar *sql;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	GdaDataModel *dmPath = path_get_data_model (confi, path_normalize (confi, path));
+	//dmPath = path_get_data_model (confi, path_normalize (confi, path));
 	if (dmPath == NULL) return FALSE;
 
-	GdaDataModel *dmParent = path_get_data_model (confi, path_normalize (confi, parent));
+	//dmParent = path_get_data_model (confi, path_normalize (confi, parent));
 	if (dmParent == NULL) return FALSE;
 
 	ret = TRUE;
@@ -716,18 +698,19 @@ confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 ConfiKey
 *confi_path_get_confi_key (Confi *confi, const gchar *path)
 {
+	GdaDataModel *dm;
 	gchar *path_;
 	ConfiKey *ck;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	path_ = path_normalize (confi, path);
+	//path_ = path_normalize (confi, path);
 	if (path_ == NULL)
 		{
 			return NULL;
 		}
 
-	GdaDataModel *dm = path_get_data_model (confi, path_);
+	//dm = path_get_data_model (confi, path_);
 	if (dm == NULL || gda_data_model_get_n_rows (dm) <= 0)
 		{
 			if (dm != NULL)
@@ -814,16 +797,21 @@ confi_destroy (Confi *confi)
 	g_free (priv->root);
 }
 
-/* PRIVATE */
-static gchar
-*path_normalize (Confi *confi, const gchar *path)
+/**
+ * confi_path_normalize:
+ * @pluggable: a #ConfiPluggable object.
+ *
+ * Returns: a normalize path (with root).
+ */
+gchar
+*confi_path_normalize (ConfiPluggable *pluggable, const gchar *path)
 {
 	GString *ret;
 	gchar *strret;
 
 	guint lead;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	gchar *root;
 
 	if (path == NULL)
 		{
@@ -855,7 +843,9 @@ static gchar
 		{
 			g_string_erase (ret, 0, lead++);
 		}
-	g_string_prepend (ret, priv->root);
+
+	g_object_get (pluggable, "root", &root, NULL);
+	g_string_prepend (ret, root);
 
 	strret = g_strdup (ret->str);
 	g_string_free (ret, TRUE);
@@ -863,80 +853,7 @@ static gchar
 	return strret;
 }
 
-static GdaDataModel
-*path_get_data_model (Confi *confi, const gchar *path)
-{
-	gchar **tokens;
-	gchar *sql;
-	gchar *token;
-	guint i;
-	guint id_parent;
-	GdaDataModel *dm = NULL;
-
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	if (path == NULL) return NULL;
-
-	tokens = g_strsplit (path, "/", 0);
-	if (tokens == NULL) return NULL;
-
-	i = 0;
-	id_parent = 0;
-	while (tokens[i] != NULL)
-		{
-			token = g_strstrip (g_strdup (tokens[i]));
-			if (strcmp (token, "") != 0)
-				{
-					sql = g_strdup_printf ("SELECT * "
-					                       "FROM %cvalues%c "
-					                       "WHERE id_configs = %d "
-					                       "AND id_parent = %d "
-					                       "AND %ckey%c = '%s'",
-					                       priv->chrquot, priv->chrquot,
-					                       priv->id_config,
-					                       id_parent,
-					                       priv->chrquot, priv->chrquot,
-					                       gdaex_strescape (token, NULL));
-					dm = gdaex_query (priv->gdaex, sql);
-					g_free (sql);
-					if (dm == NULL || gda_data_model_get_n_rows (dm) != 1)
-						{
-							/* TO DO */
-							g_warning ("Unable to find key «%s».", token);
-							if (dm != NULL)
-								{
-									g_object_unref (dm);
-									dm = NULL;
-								}
-							break;
-						}
-					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
-				}
-
-			i++;
-		}
-
-	return dm;
-}
-
-static gchar
-*path_get_value_from_db (Confi *confi, const gchar *path)
-{
-	gchar *ret;
-	GdaDataModel *dm;
-
-	ret = NULL;
-
-	dm = path_get_data_model (confi, path);
-	if (dm != NULL)
-		{
-			ret = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
-			g_object_unref (dm);
-		}
-
-	return ret;
-}
-
+/* PRIVATE */
 static void
 get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path)
 {
@@ -1014,7 +931,7 @@ confi_set_property (GObject *object, guint property_id, const GValue *value, GPa
 				break;
 
 			case PROP_ROOT:
-				confi_set_root (confi, g_value_get_string (value));
+				priv->root = confi_normalize_root (g_value_get_string (value));
 				break;
 
 			default:

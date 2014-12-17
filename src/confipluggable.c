@@ -50,7 +50,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 			                                                          "Connection string",
 			                                                          "Connection string",
 			                                                          "",
-			                                                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+			                                                          G_PARAM_READWRITE));
 
 			/**
 			* ConfiPluggable:name:
@@ -61,7 +61,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 			                                                          "Configuraton Name",
 			                                                          "The configuration name",
 			                                                          "",
-			                                                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+			                                                          G_PARAM_READWRITE));
 
 			/**
 			* ConfiPluggable:description:
@@ -72,7 +72,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 			                                                          "Configuraton Description",
 			                                                          "The configuration description",
 			                                                          "",
-			                                                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+			                                                          G_PARAM_READWRITE));
 
 			/**
 			* ConfiPluggable:root:
@@ -131,3 +131,24 @@ GList
 
 	return iface->get_configs_list (pluggable, filter);
 }
+
+/**
+ * confi_pluggable_path_get_value:
+ * @pluggable: A #ConfiPluggable.
+ * @path:
+ *
+ * Returns: the value of the @path.
+*/
+gchar
+*confi_pluggable_path_get_value (ConfiPluggable *pluggable, const gchar *path)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->path_get_value != NULL, FALSE);
+
+	return iface->path_get_value (pluggable, path);
+}
+

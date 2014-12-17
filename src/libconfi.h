@@ -25,6 +25,9 @@
 G_BEGIN_DECLS
 
 
+#include "confipluggable.h"
+
+
 #define CONFI_TYPE_CONFI (confi_confi_get_type ())
 
 GType confi_confi_get_type ();
@@ -89,8 +92,7 @@ GList *confi_get_configs_list (const gchar *cnc_string,
 
 GNode *confi_get_tree (Confi *confi);
 
-gboolean confi_set_root (Confi *confi,
-                         const gchar *root);
+gchar *confi_normalize_root (const gchar *root);
 
 ConfiKey *confi_add_key (Confi *confi,
                          const gchar *parent,
@@ -122,6 +124,8 @@ ConfiKey *confi_path_get_confi_key (Confi *confi,
 gboolean confi_remove (Confi *confi);
 
 void confi_destroy (Confi *confi);
+
+gchar *confi_path_normalize (ConfiPluggable *pluggable, const gchar *path);
 
 
 G_END_DECLS

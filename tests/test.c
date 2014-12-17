@@ -64,7 +64,7 @@ main (int argc, char **argv)
 			confis = g_list_next (confis);
 		}
 
-	/*confi = confi_new (argv[1], "Default", NULL, FALSE);
+	confi = confi_new (argv[1]);
 	if (confi == NULL)
 		{
 			g_error ("Error on configuration initialization.");
@@ -73,7 +73,7 @@ main (int argc, char **argv)
 
 	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", confi_path_get_value (confi, "folder/key1/key1_2"));
 
-	g_printf ("Traversing the entire tree\n");
+	/*g_printf ("Traversing the entire tree\n");
 	tree = confi_get_tree (confi);
 	g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
 	g_printf ("\n");

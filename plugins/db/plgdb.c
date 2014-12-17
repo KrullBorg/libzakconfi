@@ -38,7 +38,10 @@
 
 #include "plgdb.h"
 
-static void confi_pluggable_iface_init (ConfiPluggableInterface    *iface);
+static void confi_pluggable_iface_init (ConfiPluggableInterface *iface);
+
+static GdaDataModel *confi_db_plugin_path_get_data_model (ConfiPluggable *pluggable, const gchar *path);
+static gchar *confi_db_plugin_path_get_value_from_db (ConfiPluggable *pluggable, const gchar *path);
 
 #define CONFI_DB_PLUGIN_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), CONFI_TYPE_DB_PLUGIN, ConfiDBPluginPrivate))
 
@@ -53,7 +56,6 @@ struct _ConfiDBPluginPrivate
 		gchar *name;
 		gchar *description;
 		gchar *root;
-		GHashTable *values;
 
 		gchar chrquot;
 	};
@@ -79,6 +81,8 @@ confi_db_plugin_set_property (GObject      *object,
                               const GValue *value,
                               GParamSpec   *pspec)
 {
+	gchar *sql;
+
 	ConfiDBPlugin *plugin = CONFI_DB_PLUGIN (object);
 	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
 
@@ -89,12 +93,29 @@ confi_db_plugin_set_property (GObject      *object,
 				break;
 
 			case PROP_NAME:
+				priv->name = g_strdup (g_value_get_string (value));
+				sql = g_strdup_printf ("UPDATE configs "
+				                       "SET name = '%s' "
+				                       "WHERE id = %d",
+				                       gdaex_strescape (priv->name, NULL),
+				                       priv->id_config);
+				gdaex_execute (priv->gdaex, sql);
+				g_free (sql);
 				break;
 
 			case PROP_DESCRIPTION:
+				priv->description = g_strdup (g_value_get_string (value));
+				sql = g_strdup_printf ("UPDATE configs "
+				                       "SET description = '%s' "
+				                       "WHERE id = %d",
+				                       gdaex_strescape (priv->description, NULL),
+				                       priv->id_config);
+				gdaex_execute (priv->gdaex, sql);
+				g_free (sql);
 				break;
 
 			case PROP_ROOT:
+				priv->root = confi_normalize_root (g_value_get_string (value));
 				break;
 
 			default:
@@ -139,6 +160,12 @@ confi_db_plugin_get_property (GObject    *object,
 static void
 confi_db_plugin_init (ConfiDBPlugin *plugin)
 {
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
+
+	priv->cnc_string = NULL;
+	priv->gdaex = NULL;
+	priv->name = NULL;
+	priv->description = NULL;
 }
 
 static void
@@ -159,6 +186,9 @@ confi_db_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 	gchar **strs;
 	guint i;
 	guint l;
+
+	gchar *sql;
+	GdaDataModel *dm;
 
 	strs = g_strsplit (cnc_string, ";", -1);
 
@@ -191,8 +221,101 @@ confi_db_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 	g_strfreev (strs);
 
 	priv->gdaex = gdaex_new_from_string (priv->cnc_string);
+	priv->chrquot = gdaex_get_chr_quoting (priv->gdaex);
 
-	return (priv->gdaex != NULL ? TRUE : FALSE);
+	/* check if config exists */
+	sql = g_strdup_printf ("SELECT id, name"
+	                       " FROM configs"
+	                       " WHERE name = '%s'",
+	                       gdaex_strescape (priv->name, NULL));
+	dm = gdaex_query (priv->gdaex, sql);
+	g_free (sql);
+	if (dm != NULL || gda_data_model_get_n_rows (dm) > 0)
+		{
+			priv->id_config = gdaex_data_model_get_value_integer_at (dm, 0, 0);
+		}
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
+		}
+
+	return (priv->gdaex != NULL && priv->name != NULL ? TRUE : FALSE);
+}
+
+static GdaDataModel
+*confi_db_plugin_path_get_data_model (ConfiPluggable *pluggable, const gchar *path)
+{
+	gchar **tokens;
+	gchar *sql;
+	gchar *token;
+	guint i;
+	guint id_parent;
+	GdaDataModel *dm;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	if (path == NULL) return NULL;
+
+	dm = NULL;
+
+	tokens = g_strsplit (path, "/", 0);
+	if (tokens == NULL) return NULL;
+
+	i = 0;
+	id_parent = 0;
+	while (tokens[i] != NULL)
+		{
+			token = g_strstrip (g_strdup (tokens[i]));
+			if (strcmp (token, "") != 0)
+				{
+					sql = g_strdup_printf ("SELECT * "
+					                       "FROM %cvalues%c "
+					                       "WHERE id_configs = %d "
+					                       "AND id_parent = %d "
+					                       "AND %ckey%c = '%s'",
+					                       priv->chrquot, priv->chrquot,
+					                       priv->id_config,
+					                       id_parent,
+					                       priv->chrquot, priv->chrquot,
+					                       gdaex_strescape (token, NULL));
+					dm = gdaex_query (priv->gdaex, sql);
+					g_free (sql);
+					if (dm == NULL || gda_data_model_get_n_rows (dm) != 1)
+						{
+							/* TO DO */
+							g_warning ("Unable to find key «%s».", token);
+							if (dm != NULL)
+								{
+									g_object_unref (dm);
+									dm = NULL;
+								}
+							break;
+						}
+					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
+				}
+
+			i++;
+		}
+
+	return dm;
+}
+
+static gchar
+*confi_db_plugin_path_get_value_from_db (ConfiPluggable *pluggable, const gchar *path)
+{
+	gchar *ret;
+	GdaDataModel *dm;
+
+	ret = NULL;
+
+	dm = confi_db_plugin_path_get_data_model (pluggable, path);
+	if (dm != NULL)
+		{
+			ret = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
+			g_object_unref (dm);
+		}
+
+	return ret;
 }
 
 static GList
@@ -201,8 +324,14 @@ static GList
 {
 	GList *lst;
 
+	GdaDataModel *dmConfigs;
+
 	gchar *sql;
-	gchar *where = "";
+	gchar *where;
+
+	guint row;
+	guint id;
+	guint rows;
 
 	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
@@ -217,16 +346,18 @@ static GList
 		{
 			where = g_strdup_printf (" WHERE name LIKE '%s'", filter);
 		}
+	else
+		{
+			where = g_strdup ("");
+		}
 
 	sql = g_strdup_printf ("SELECT * FROM configs%s", where);
+	g_free (where);
 
-	GdaDataModel *dmConfigs = gdaex_query (priv->gdaex, sql);
+	dmConfigs = gdaex_query (priv->gdaex, sql);
+	g_free (sql);
 	if (dmConfigs != NULL)
 		{
-			guint row;
-			guint id;
-			guint rows;
-
 			rows = gda_data_model_get_n_rows (dmConfigs);
 			if (rows > 0)
 				{
@@ -246,6 +377,27 @@ static GList
 		}
 
 	return lst;
+}
+
+static gchar
+*confi_db_plugin_path_get_value (ConfiPluggable *pluggable, const gchar *path)
+{
+	gchar *ret;
+	gchar *path_;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	ret = NULL;
+
+	path_ = confi_path_normalize (pluggable, path);
+	if (path_ == NULL)
+		{
+			return NULL;
+		}
+
+	ret = confi_db_plugin_path_get_value_from_db (pluggable, path_);
+
+	return ret;
 }
 
 static void
@@ -270,6 +422,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 {
 	iface->initialize = confi_db_plugin_initialize;
 	iface->get_configs_list = confi_db_plugin_get_configs_list;
+	iface->path_get_value = confi_db_plugin_path_get_value;
 }
 
 static void
