@@ -173,7 +173,7 @@ confi_pluggable_path_set_value (ConfiPluggable *pluggable, const gchar *path, co
 }
 
 /**
- * confi_get_tree:
+ * confi_pluggable_get_tree:
  * @pluggable: a #ConfiPluggable object.
  *
  * Returns: a #GNode with the entire tree of configurations.
@@ -189,4 +189,26 @@ GNode
 	g_return_val_if_fail (iface->get_tree != NULL, FALSE);
 
 	return iface->get_tree (pluggable);
+}
+
+/**
+ * confi_pluggable_add_key:
+ * @pluggable: a #ConfiPluggable object.
+ * @parent: the path where add the key.
+ * @key: the key's name.
+ * @value: the key's value.
+ *
+ * Returns: a #ConfigKey struct filled with data from the key just added.
+ */
+ConfiKey
+*confi_pluggable_add_key (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->add_key != NULL, FALSE);
+
+	return iface->add_key (pluggable, parent, key, value);
 }

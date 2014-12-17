@@ -221,6 +221,11 @@ confi_db_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 	g_string_free (gstr_cnc_string, TRUE);
 	g_strfreev (strs);
 
+	if (priv->name == NULL)
+		{
+			priv->name = g_strdup ("Default");
+		}
+
 	priv->gdaex = gdaex_new_from_string (priv->cnc_string);
 	priv->chrquot = gdaex_get_chr_quoting (priv->gdaex);
 
@@ -505,6 +510,133 @@ GNode
 	return node;
 }
 
+static ConfiKey
+*confi_db_plugin_add_key (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
+{
+	ConfiKey *ck;
+	GdaDataModel *dmParent;
+
+	gchar *sql;
+	gint id;
+	GdaDataModel *dm;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	gint id_parent;
+	gchar *parent_;
+	gchar *key_;
+
+	gchar *path;
+
+	ck = NULL;
+	if (parent == NULL)
+		{
+			id_parent = 0;
+		}
+	else
+		{
+			parent_ = g_strstrip (g_strdup (parent));
+			if (strcmp (parent_, "") == 0)
+				{
+					id_parent = 0;
+				}
+			else
+				{
+					dmParent = confi_db_plugin_path_get_data_model (pluggable, confi_path_normalize (pluggable, parent_));
+					if (dmParent == NULL)
+						{
+							id_parent = -1;
+						}
+					else
+						{
+							id_parent = gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id");
+						}
+				}
+		}
+
+	if (id_parent > -1)
+		{
+			id = 0;
+
+			/* find new id */
+			sql = g_strdup_printf ("SELECT MAX(id) FROM %cvalues%c "
+			                       "WHERE id_configs = %d ",
+			                       priv->chrquot, priv->chrquot,
+			                       priv->id_config);
+			dm = gdaex_query (priv->gdaex, sql);
+			g_free (sql);
+			if (dm != NULL)
+				{
+					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
+					g_object_unref (dm);
+				}
+			id++;
+
+			key_ = g_strstrip (g_strdup (key));
+
+			sql = g_strdup_printf ("INSERT INTO %cvalues%c "
+			                       "(id_configs, id, id_parent, %ckey%c, value) "
+			                       "VALUES (%d, %d, %d, '%s', '%s')",
+			                       priv->chrquot, priv->chrquot,
+			                       priv->chrquot, priv->chrquot,
+			                       priv->id_config,
+			                       id,
+			                       id_parent,
+			                       gdaex_strescape (key_, NULL),
+			                       "");
+			if (gdaex_execute (priv->gdaex, sql) == -1)
+				{
+					/* TO DO */
+					g_free (sql);
+					return NULL;
+				}
+			g_free (sql);
+
+			ck = g_new0 (ConfiKey, 1);
+			ck->id_config = priv->id_config;
+			ck->id = id;
+			ck->id_parent = id_parent;
+			ck->key = g_strdup (key_);
+			ck->value = g_strdup ("");
+			ck->description = g_strdup ("");
+			if (id_parent == 0)
+				{
+					ck->path = g_strdup ("");
+				}
+			else
+				{
+					ck->path = g_strdup (parent_);
+				}
+
+			g_free (key_);
+		}
+	g_free (parent_);
+
+	if (ck != NULL)
+		{
+			if (ck->id_parent != 0)
+				{
+					path = g_strconcat (ck->path, "/", key, NULL);
+				}
+			else
+				{
+					path = g_strdup (ck->key);
+				}
+
+			if (!confi_db_plugin_path_set_value (pluggable, path, value))
+				{
+					ck = NULL;
+				}
+			else
+				{
+					ck->value = g_strdup (value);
+				}
+			g_free (path);
+		}
+
+	return ck;
+}
+
 static void
 confi_db_plugin_class_init (ConfiDBPluginClass *klass)
 {
@@ -530,6 +662,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->path_get_value = confi_db_plugin_path_get_value;
 	iface->path_set_value = confi_db_plugin_path_set_value;
 	iface->get_tree = confi_db_plugin_get_tree;
+	iface->add_key = confi_db_plugin_add_key;
 }
 
 static void

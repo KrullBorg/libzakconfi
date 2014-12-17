@@ -24,6 +24,8 @@
 
 #include <glib-object.h>
 
+#include "commons.h"
+
 G_BEGIN_DECLS
 
 /*
@@ -62,6 +64,7 @@ struct _ConfiPluggableInterface {
 	                               const gchar *path,
 	                               const gchar *value);
 	GNode *(*get_tree) (ConfiPluggable *pluggable);
+	ConfiKey *(*add_key) (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value);
 };
 
 /*
@@ -69,15 +72,21 @@ struct _ConfiPluggableInterface {
  */
 GType confi_pluggable_get_type (void) G_GNUC_CONST;
 
-gboolean confi_pluggable_initialize (ConfiPluggable *pluggable, const gchar *cnc_string);
+gboolean confi_pluggable_initialize (ConfiPluggable *pluggable,
+                                     const gchar *cnc_string);
 
 GList *confi_pluggable_get_configs_list (ConfiPluggable *pluggable,
                                          const gchar *filter);
-gchar *confi_pluggable_path_get_value (ConfiPluggable *pluggable, const gchar *path);
+gchar *confi_pluggable_path_get_value (ConfiPluggable *pluggable,
+                                       const gchar *path);
 gboolean confi_pluggable_path_set_value (ConfiPluggable *pluggable,
                                const gchar *path,
                                const gchar *value);
 GNode *confi_pluggable_get_tree (ConfiPluggable *pluggable);
+ConfiKey *confi_pluggable_add_key (ConfiPluggable *pluggable,
+                                   const gchar *parent,
+                                   const gchar *key,
+                                   const gchar *value);
 
 
 G_END_DECLS

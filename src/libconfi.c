@@ -321,142 +321,25 @@ gchar
  * @confi: a #Confi object.
  * @parent: the path where add the key.
  * @key: the key's name.
- *
- * Returns: a #ConfigKey struct filled with data from the key just added.
- */
-ConfiKey
-*confi_add_key (Confi *confi, const gchar *parent, const gchar *key)
-{
-	ConfiKey *ck = NULL;
-	GdaDataModel *dmParent;
-
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	gint id_parent;
-	gchar *parent_;
-	gchar *key_;
-
-	if (parent == NULL)
-		{
-			id_parent = 0;
-		}
-	else
-		{
-			parent_ = g_strstrip (g_strdup (parent));
-			if (strcmp (parent_, "") == 0)
-				{
-					id_parent = 0;
-				}
-			else
-				{
-					//dmParent = path_get_data_model (confi, path_normalize (confi, parent_));
-					if (dmParent == NULL)
-						{
-							id_parent = -1;
-						}
-					else
-						{
-							id_parent = gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id");
-						}
-				}
-		}
-
-	if (id_parent > -1)
-		{
-			gchar *sql;
-			gint id = 0;
-			GdaDataModel *dm;
-
-			/* find new id */
-			sql = g_strdup_printf ("SELECT MAX(id) FROM %cvalues%c "
-			                       "WHERE id_configs = %d ",
-			                       priv->chrquot, priv->chrquot,
-			                       priv->id_config);
-			dm = gdaex_query (priv->gdaex, sql);
-			if (dm != NULL)
-				{
-					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
-					g_object_unref (dm);
-				}
-			id++;
-
-			key_ = g_strstrip (g_strdup (key));
-
-			sql = g_strdup_printf ("INSERT INTO %cvalues%c "
-			                       "(id_configs, id, id_parent, %ckey%c, value) "
-			                       "VALUES (%d, %d, %d, '%s', '%s')",
-			                       priv->chrquot, priv->chrquot,
-			                       priv->chrquot, priv->chrquot,
-			                       priv->id_config,
-			                       id,
-			                       id_parent,
-			                       gdaex_strescape (key_, NULL),
-			                       "");
-			if (gdaex_execute (priv->gdaex, sql) == -1)
-				{
-					/* TO DO */
-					return NULL;
-				}
-
-			ck = g_new0 (ConfiKey, 1);
-			ck->id_config = priv->id_config;
-			ck->id = id;
-			ck->id_parent = id_parent;
-			ck->key = g_strdup (key_);
-			ck->value = g_strdup ("");
-			ck->description = g_strdup ("");
-			if (id_parent == 0)
-				{
-					ck->path = g_strdup ("");
-				}
-			else
-				{
-					ck->path = g_strdup (parent_);
-				}
-
-			g_free (key_);
-		}
-	g_free (parent_);
-
-	return ck;
-}
-
-/**
- * confi_add_key_with_value:
- * @confi: a #Confi object.
- * @parent: the path where add the key.
- * @key: the key's name.
  * @value: the key's value.
  *
  * Returns: a #ConfigKey struct filled with data from the key just added.
  */
 ConfiKey
-*confi_add_key_with_value (Confi *confi, const gchar *parent, const gchar *key, const gchar *value)
+*confi_add_key (Confi *confi, const gchar *parent, const gchar *key, const gchar *value)
 {
-	gchar *path;
+	ConfiKey *ck;
 
-	ConfiKey *ck = confi_add_key (confi, parent, key);
+	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	if (ck != NULL)
+	if (priv->pluggable == NULL)
 		{
-			if (ck->id_parent != 0)
-				{
-					path = g_strconcat (ck->path, "/", key, NULL);
-				}
-			else
-				{
-					path = g_strdup (ck->key);
-				}
-
-			if (!confi_path_set_value (confi, path, value))
-				{
-					ck = NULL;
-				}
-			else
-				{
-					ck->value = g_strdup (value);
-				}
-			g_free (path);
+			g_warning ("Not initialized.");
+			ck = NULL;
+		}
+	else
+		{
+			ck = confi_pluggable_add_key (priv->pluggable, parent, key, value);
 		}
 
 	return ck;

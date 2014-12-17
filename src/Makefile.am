@@ -11,7 +11,8 @@ libconfi_la_SOURCES = libconfi.c \
 
 libconfi_la_LDFLAGS = -no-undefined
 
-include_HEADERS = libconfi.h \
+include_HEADERS = commons.h \
+                  libconfi.h \
                   confipluggable.h
 
 libconfi_includedir = $(includedir)/libconfi

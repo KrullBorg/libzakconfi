@@ -21,45 +21,11 @@
 
 #include <glib-object.h>
 
-
-G_BEGIN_DECLS
-
-
+#include "commons.h"
 #include "confipluggable.h"
 
 
-#define CONFI_TYPE_CONFI (confi_confi_get_type ())
-
-GType confi_confi_get_type ();
-
-typedef struct _ConfiConfi ConfiConfi;
-struct _ConfiConfi
-	{
-		gchar *name;
-		gchar *description;
-	};
-
-ConfiConfi *confi_confi_copy (ConfiConfi *confi);
-void confi_confi_free (ConfiConfi *confi);
-
-#define CONFI_TYPE_KEY (confi_key_get_type ())
-
-GType confi_key_get_type ();
-
-typedef struct _ConfiKey ConfiKey;
-struct _ConfiKey
-	{
-		gint id_config;
-		gint id;
-		gint id_parent;
-		gchar *key;
-		gchar *value;
-		gchar *description;
-		gchar *path;
-	};
-
-ConfiKey *confi_key_copy (ConfiKey *key);
-void confi_key_free (ConfiKey *key);
+G_BEGIN_DECLS
 
 
 #define TYPE_CONFI                 (confi_get_type ())
@@ -96,11 +62,8 @@ gchar *confi_normalize_root (const gchar *root);
 
 ConfiKey *confi_add_key (Confi *confi,
                          const gchar *parent,
-                         const gchar *key);
-ConfiKey *confi_add_key_with_value (Confi *confi,
-                                    const gchar *parent,
-                                    const gchar *key,
-                                    const gchar *value);
+                         const gchar *key,
+                         const gchar *value);
 
 gboolean confi_key_set_key (Confi *confi,
                             ConfiKey *ck);

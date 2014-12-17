@@ -82,6 +82,9 @@ main (int argc, char **argv)
 	g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
 	g_printf ("\n");
 
+	confi_add_key (confi, "folder/key2", "key2-2", NULL);
+	confi_path_set_value (confi, "folder/key2/key2-2", "value for key2-2, programmatically setted");
+
 	/*g_printf ("Setting root \"key2\"\n");
 	confi_set_root (confi, "key2");
 	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));*/
