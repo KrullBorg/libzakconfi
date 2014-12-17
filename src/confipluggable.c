@@ -152,3 +152,22 @@ gchar
 	return iface->path_get_value (pluggable, path);
 }
 
+/**
+ * confi_pluggable_path_set_value:
+ * @pluggable: a #ConfiPluggable object.
+ * @path: the key's path.
+ * @value: the value to set.
+ *
+ */
+gboolean
+confi_pluggable_path_set_value (ConfiPluggable *pluggable, const gchar *path, const gchar *value)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->path_set_value != NULL, FALSE);
+
+	return iface->path_set_value (pluggable, path, value);
+}

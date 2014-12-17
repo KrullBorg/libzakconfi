@@ -615,34 +615,18 @@ gchar
 gboolean
 confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 {
-	GdaDataModel *dm;
-	gchar *sql;
 	gboolean ret;
-
-	//dm = path_get_data_model (confi, path_normalize (confi, path));
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	ret = FALSE;
-	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
+	if (priv->pluggable == NULL)
 		{
-			sql = g_strdup_printf ("UPDATE %cvalues%c SET value = '%s' "
-			                              "WHERE id_configs = %d "
-			                              "AND id = %d ",
-			                              priv->chrquot, priv->chrquot,
-			                              gdaex_strescape (value, NULL),
-			                              priv->id_config,
-			                              gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
-			ret = (gdaex_execute (priv->gdaex, sql) >= 0);
-			g_free (sql);
+			g_warning ("Not initialized.");
+			ret = FALSE;
 		}
 	else
 		{
-			g_warning ("Path %s doesn't exists.", path);
-		}
-	if (dm != NULL)
-		{
-			g_object_unref (dm);
+			ret = confi_pluggable_path_set_value (priv->pluggable, path, value);
 		}
 
 	return ret;

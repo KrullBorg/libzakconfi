@@ -400,6 +400,42 @@ static gchar
 	return ret;
 }
 
+gboolean
+confi_db_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, const gchar *value)
+{
+	GdaDataModel *dm;
+	gchar *sql;
+	gboolean ret;
+
+	dm = confi_db_plugin_path_get_data_model (pluggable, confi_path_normalize (pluggable, path));
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	ret = FALSE;
+	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
+		{
+			sql = g_strdup_printf ("UPDATE %cvalues%c SET value = '%s' "
+			                              "WHERE id_configs = %d "
+			                              "AND id = %d ",
+			                              priv->chrquot, priv->chrquot,
+			                              gdaex_strescape (value, NULL),
+			                              priv->id_config,
+			                              gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
+			ret = (gdaex_execute (priv->gdaex, sql) >= 0);
+			g_free (sql);
+		}
+	else
+		{
+			g_warning ("Path %s doesn't exists.", path);
+		}
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
+		}
+
+	return ret;
+}
+
 static void
 confi_db_plugin_class_init (ConfiDBPluginClass *klass)
 {
@@ -423,6 +459,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->initialize = confi_db_plugin_initialize;
 	iface->get_configs_list = confi_db_plugin_get_configs_list;
 	iface->path_get_value = confi_db_plugin_path_get_value;
+	iface->path_set_value = confi_db_plugin_path_set_value;
 }
 
 static void

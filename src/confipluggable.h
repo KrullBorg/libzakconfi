@@ -58,6 +58,9 @@ struct _ConfiPluggableInterface {
 	GList *(*get_configs_list) (ConfiPluggable *pluggable,
 	                            const gchar *filter);
 	gchar *(*path_get_value) (ConfiPluggable *pluggable, const gchar *path);
+	gboolean (*path_set_value) (ConfiPluggable *pluggable,
+	                               const gchar *path,
+	                               const gchar *value);
 };
 
 /*
@@ -70,6 +73,9 @@ gboolean confi_pluggable_initialize (ConfiPluggable *pluggable, const gchar *cnc
 GList *confi_pluggable_get_configs_list (ConfiPluggable *pluggable,
                                          const gchar *filter);
 gchar *confi_pluggable_path_get_value (ConfiPluggable *pluggable, const gchar *path);
+gboolean confi_pluggable_path_set_value (ConfiPluggable *pluggable,
+                               const gchar *path,
+                               const gchar *value);
 
 
 G_END_DECLS

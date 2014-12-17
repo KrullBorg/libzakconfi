@@ -71,7 +71,11 @@ main (int argc, char **argv)
 			return 0;
 		}
 
+	gchar *val = confi_path_get_value (confi, "folder/key1/key1_2");
+	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", val);
+	confi_path_set_value (confi, "folder/key1/key1_2", "new value programmatically setted");
 	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", confi_path_get_value (confi, "folder/key1/key1_2"));
+	confi_path_set_value (confi, "folder/key1/key1_2", val);
 
 	/*g_printf ("Traversing the entire tree\n");
 	tree = confi_get_tree (confi);
