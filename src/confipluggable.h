@@ -61,6 +61,7 @@ struct _ConfiPluggableInterface {
 	gboolean (*path_set_value) (ConfiPluggable *pluggable,
 	                               const gchar *path,
 	                               const gchar *value);
+	GNode *(*get_tree) (ConfiPluggable *pluggable);
 };
 
 /*
@@ -76,6 +77,7 @@ gchar *confi_pluggable_path_get_value (ConfiPluggable *pluggable, const gchar *p
 gboolean confi_pluggable_path_set_value (ConfiPluggable *pluggable,
                                const gchar *path,
                                const gchar *value);
+GNode *confi_pluggable_get_tree (ConfiPluggable *pluggable);
 
 
 G_END_DECLS

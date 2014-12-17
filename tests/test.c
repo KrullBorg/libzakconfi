@@ -77,16 +77,16 @@ main (int argc, char **argv)
 	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", confi_path_get_value (confi, "folder/key1/key1_2"));
 	confi_path_set_value (confi, "folder/key1/key1_2", val);
 
-	/*g_printf ("Traversing the entire tree\n");
+	g_printf ("Traversing the entire tree\n");
 	tree = confi_get_tree (confi);
 	g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
 	g_printf ("\n");
 
-	g_printf ("Setting root \"key2\"\n");
+	/*g_printf ("Setting root \"key2\"\n");
 	confi_set_root (confi, "key2");
-	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));
+	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));*/
 
-	confi_destroy (confi);*/
+	confi_destroy (confi);
 
 	return 0;
 }

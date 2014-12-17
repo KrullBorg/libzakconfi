@@ -171,3 +171,22 @@ confi_pluggable_path_set_value (ConfiPluggable *pluggable, const gchar *path, co
 
 	return iface->path_set_value (pluggable, path, value);
 }
+
+/**
+ * confi_get_tree:
+ * @pluggable: a #ConfiPluggable object.
+ *
+ * Returns: a #GNode with the entire tree of configurations.
+ */
+GNode
+*confi_pluggable_get_tree (ConfiPluggable *pluggable)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->get_tree != NULL, FALSE);
+
+	return iface->get_tree (pluggable);
+}

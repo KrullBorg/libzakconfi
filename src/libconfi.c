@@ -103,7 +103,6 @@ static void confi_get_property (GObject *object,
 
 static ConfiPluggable *confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string);
 
-static void get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path);
 static gboolean confi_delete_id_from_db_values (Confi *confi, gint id);
 static gboolean confi_remove_path_traverse_func (GNode *node, gpointer data);
 
@@ -135,31 +134,6 @@ confi_class_init (ConfiClass *klass)
 
 	object_class->set_property = confi_set_property;
 	object_class->get_property = confi_get_property;
-
-	g_object_class_install_property (object_class, PROP_ID_CONFIG,
-	                                 g_param_spec_int ("id_config",
-	                                                   "Configuraton ID",
-	                                                   "The configuration ID",
-	                                                   0, G_MAXINT, 0,
-	                                                   G_PARAM_READABLE));
-	g_object_class_install_property (object_class, PROP_NAME,
-	                                 g_param_spec_string ("name",
-	                                                      "Configuraton Name",
-	                                                      "The configuration name",
-	                                                      "",
-	                                                      G_PARAM_READWRITE));
-	g_object_class_install_property (object_class, PROP_DESCRIPTION,
-	                                 g_param_spec_string ("description",
-	                                                      "Configuraton Description",
-	                                                      "The configuration description",
-	                                                      "",
-	                                                      G_PARAM_READWRITE));
-	g_object_class_install_property (object_class, PROP_ROOT,
-	                                 g_param_spec_string ("root",
-	                                                      "Configuraton Root",
-	                                                      "The configuration root",
-	                                                      "/",
-	                                                      G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 }
 
 static void
@@ -286,23 +260,16 @@ GList
 GNode
 *confi_get_tree (Confi *confi)
 {
-	gchar *path = "";
-	GNode *node;
-
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	ConfiKey *ck = g_new0 (ConfiKey, 1);
-
-	ck->id_config = priv->id_config;
-	ck->id = 0;
-	ck->id_parent = 0;
-	ck->key = g_strdup ("/");
-
-	node = g_node_new (ck);
-
-	get_children (confi, node, 0, path);
-
-	return node;
+	if (priv->pluggable != NULL)
+		{
+			return confi_pluggable_get_tree (priv->pluggable);
+		}
+	else
+		{
+			return NULL;
+		}
 }
 
 /**
@@ -839,50 +806,6 @@ gchar
 
 /* PRIVATE */
 static void
-get_children (Confi *confi, GNode *parentNode, gint idParent, gchar *path)
-{
-	gchar *sql;
-	GdaDataModel *dm;
-
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	sql = g_strdup_printf ("SELECT * FROM %cvalues%c "
-	                              "WHERE id_configs = %d AND "
-	                              "id_parent = %d",
-	                              priv->chrquot, priv->chrquot,
-	                              priv->id_config,
-	                              idParent);
-
-	dm = gdaex_query (priv->gdaex, sql);
-	g_free (sql);
-	if (dm != NULL)
-		{
-			guint i;
-			guint rows;
-
-			rows = gda_data_model_get_n_rows (dm);
-			for (i = 0; i < rows; i++)
-				{
-					GNode *newNode;
-					ConfiKey *ck = g_new0 (ConfiKey, 1);
-
-					ck->id_config = priv->id_config;
-					ck->id = gdaex_data_model_get_field_value_integer_at (dm, i, "id");
-					ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, i, "id_parent");
-					ck->key = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "key"));
-					ck->value = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "value"));
-					ck->description = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "description"));
-					ck->path = g_strdup (path);
-
-					newNode = g_node_append_data (parentNode, ck);
-
-					get_children (confi, newNode, ck->id, g_strconcat (path, (strcmp (path, "") == 0 ? "" : "/"), ck->key, NULL));
-				}
-			g_object_unref (dm);
-		}
-}
-
-static void
 confi_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
 	gchar *sql;
@@ -892,32 +815,6 @@ confi_set_property (GObject *object, guint property_id, const GValue *value, GPa
 
 	switch (property_id)
 		{
-			case PROP_NAME:
-				priv->name = g_strdup (g_value_get_string (value));
-				sql = g_strdup_printf ("UPDATE configs "
-				                       "SET name = '%s' "
-				                       "WHERE id = %d",
-				                       gdaex_strescape (priv->name, NULL),
-				                       priv->id_config);
-				gdaex_execute (priv->gdaex, sql);
-				g_free (sql);
-				break;
-
-			case PROP_DESCRIPTION:
-				priv->description = g_strdup (g_value_get_string (value));
-				sql = g_strdup_printf ("UPDATE configs "
-				                       "SET description = '%s' "
-				                       "WHERE id = %d",
-				                       gdaex_strescape (priv->description, NULL),
-				                       priv->id_config);
-				gdaex_execute (priv->gdaex, sql);
-				g_free (sql);
-				break;
-
-			case PROP_ROOT:
-				priv->root = confi_normalize_root (g_value_get_string (value));
-				break;
-
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
 				break;
@@ -932,22 +829,6 @@ confi_get_property (GObject *object, guint property_id, GValue *value, GParamSpe
 
 	switch (property_id)
 		{
-			case PROP_ID_CONFIG:
-				g_value_set_int (value, priv->id_config);
-				break;
-
-			case PROP_NAME:
-				g_value_set_string (value, priv->name);
-				break;
-
-			case PROP_DESCRIPTION:
-				g_value_set_string (value, priv->description);
-				break;
-
-			case PROP_ROOT:
-				g_value_set_string (value, priv->root);
-				break;
-
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
 				break;
