@@ -85,6 +85,15 @@ main (int argc, char **argv)
 	confi_add_key (confi, "folder/key2", "key2-2", NULL);
 	confi_path_set_value (confi, "folder/key2/key2-2", "value for key2-2, programmatically setted");
 
+	ConfiKey *ck;
+	ck = confi_path_get_confi_key (confi, "folder/key2/key2-2");
+	g_printf ("ConfiKey for folder/key2/key2-2\n");
+	g_printf ("Path: %s\n", ck->path);
+	g_printf ("Key: %s\n", ck->key);
+	g_printf ("Description: %s\n", ck->description);
+	g_printf ("Value: %s\n", ck->value);
+	g_printf ("\n");
+
 	/*g_printf ("Setting root \"key2\"\n");
 	confi_set_root (confi, "key2");
 	g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));*/

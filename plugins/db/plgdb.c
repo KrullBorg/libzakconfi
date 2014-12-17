@@ -637,6 +637,48 @@ static ConfiKey
 	return ck;
 }
 
+static ConfiKey
+*confi_db_plugin_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
+{
+	GdaDataModel *dm;
+	gchar *path_;
+	ConfiKey *ck;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	path_ = confi_path_normalize (pluggable, path);
+	if (path_ == NULL)
+		{
+			return NULL;
+		}
+
+	dm = confi_db_plugin_path_get_data_model (pluggable, path_);
+	if (dm == NULL || gda_data_model_get_n_rows (dm) <= 0)
+		{
+			if (dm != NULL)
+				{
+					g_object_unref (dm);
+				}
+			return NULL;
+		}
+
+	ck = g_new0 (ConfiKey, 1);
+	ck->id_config = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_configs");
+	ck->id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
+	ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_parent");
+	ck->key = gdaex_data_model_get_field_value_stringify_at (dm, 0, "key");
+	ck->value = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
+	ck->description = gdaex_data_model_get_field_value_stringify_at (dm, 0, "description");
+	ck->path = g_strdup (path_);
+
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
+		}
+
+	return ck;
+}
+
 static void
 confi_db_plugin_class_init (ConfiDBPluginClass *klass)
 {
@@ -663,6 +705,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->path_set_value = confi_db_plugin_path_set_value;
 	iface->get_tree = confi_db_plugin_get_tree;
 	iface->add_key = confi_db_plugin_add_key;
+	iface->path_get_confi_key = confi_db_plugin_path_get_confi_key;
 }
 
 static void

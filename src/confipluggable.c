@@ -212,3 +212,23 @@ ConfiKey
 
 	return iface->add_key (pluggable, parent, key, value);
 }
+
+/**
+ * confi_pluggable_path_get_confi_key:
+ * @pluggable: a #ConfiPluggable object.
+ * @path: the key's path to get.
+ *
+ * Returns: (transfer full): a #ConfiKey from @path
+ */
+ConfiKey
+*confi_pluggable_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->path_get_confi_key != NULL, FALSE);
+
+	return iface->path_get_confi_key (pluggable, path);
+}

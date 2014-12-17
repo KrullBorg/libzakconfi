@@ -480,40 +480,18 @@ confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
 ConfiKey
 *confi_path_get_confi_key (Confi *confi, const gchar *path)
 {
-	GdaDataModel *dm;
-	gchar *path_;
 	ConfiKey *ck;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	//path_ = path_normalize (confi, path);
-	if (path_ == NULL)
+	if (priv->pluggable == NULL)
 		{
-			return NULL;
+			g_warning ("Not initialized.");
+			ck = NULL;
 		}
-
-	//dm = path_get_data_model (confi, path_);
-	if (dm == NULL || gda_data_model_get_n_rows (dm) <= 0)
+	else
 		{
-			if (dm != NULL)
-				{
-					g_object_unref (dm);
-				}
-			return NULL;
-		}
-
-	ck = (ConfiKey *)g_malloc0 (sizeof (ConfiKey));
-	ck->id_config = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_configs");
-	ck->id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
-	ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_parent");
-	ck->key = gdaex_data_model_get_field_value_stringify_at (dm, 0, "key");
-	ck->value = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
-	ck->description = gdaex_data_model_get_field_value_stringify_at (dm, 0, "description");
-	ck->path = g_strdup (path_);
-
-	if (dm != NULL)
-		{
-			g_object_unref (dm);
+			ck = confi_pluggable_path_get_confi_key (priv->pluggable, path);
 		}
 
 	return ck;
