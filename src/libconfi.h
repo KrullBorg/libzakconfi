@@ -82,10 +82,6 @@ gboolean confi_path_set_value (Confi *confi,
                                const gchar *path,
                                const gchar *value);
 
-gboolean confi_path_move (Confi *confi,
-                          const gchar *path,
-                          const gchar *parent);
-
 ConfiKey *confi_path_get_confi_key (Confi *confi,
                                     const gchar *path);
 

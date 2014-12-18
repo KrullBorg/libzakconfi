@@ -454,46 +454,6 @@ confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 }
 
 /**
- * confi_path_move:
- * @confi: a #Confi object.
- * @path: the key's path to move.
- * @parent: the path where add the key.
- *
- */
-gboolean
-confi_path_move (Confi *confi, const gchar *path, const gchar *parent)
-{
-	GdaDataModel *dmPath;
-	GdaDataModel *dmParent;
-
-	gboolean ret;
-	gchar *sql;
-
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	//dmPath = path_get_data_model (confi, path_normalize (confi, path));
-	if (dmPath == NULL) return FALSE;
-
-	//dmParent = path_get_data_model (confi, path_normalize (confi, parent));
-	if (dmParent == NULL) return FALSE;
-
-	ret = TRUE;
-	sql = g_strdup_printf ("UPDATE %cvalues%c "
-	                              "SET id_parent = %d "
-	                              "WHERE id_configs = %d "
-	                              "AND id = %d",
-	                              priv->chrquot, priv->chrquot,
-	                              gdaex_data_model_get_field_value_integer_at (dmParent, 0, "id"),
-	                              priv->id_config,
-	                              gdaex_data_model_get_field_value_integer_at (dmPath, 0, "id"));
-
-	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
-	g_free (sql);
-
-	return ret;
-}
-
-/**
  * confi_path_get_confi_key:
  * @confi: a #Confi object.
  * @path: the key's path to get.
