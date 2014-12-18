@@ -109,6 +109,8 @@ static ConfiPluggable
 			return NULL;
 		}
 
+	peas_engine_add_search_path (peas_engine, PLUGINSDIR, NULL);
+
 	lst_plugins = peas_engine_get_plugin_list (peas_engine);
 	while (lst_plugins)
 		{

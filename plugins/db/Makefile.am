@@ -1,20 +1,18 @@
-plugindir = $(libdir)/plugins/db
+pluginsdir = $(libdir)/$(PACKAGE)/plugins
 
 AM_CPPFLAGS = \
-	-I$(top_srcdir) 	\
+	-I$(top_srcdir) \
 	$(LIBCONFI_CFLAGS)
 
-plugin_LTLIBRARIES = libdb.la
+plugins_LTLIBRARIES = libdb.la
 
 libdb_la_SOURCES = \
-	plgdb.h		\
+	plgdb.h \
 	plgdb.c
 
 libdb_la_LDFLAGS = $(PLUGIN_LIBTOOL_FLAGS)
-libdb_la_LIBADD  = \
-	$(top_builddir)/src/libconfi.la		\
+libdb_la_LIBADD = \
+	$(top_builddir)/src/libconfi.la \
 	$(LIBCONFI_LIBS)
 
-plugin_DATA = db.plugin
-
-EXTRA_DIST = $(plugin_DATA)
+plugins_DATA = db.plugin

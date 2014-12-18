@@ -2,9 +2,10 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+pluginsdir=@libdir@/@PACKAGE@/plugins
 
 Name: @PACKAGE_NAME@
-Description: Library to manage configurations with libgdaex
+Description: Library to manage configurations based on plugins (db, file, etc.)
 Version: @PACKAGE_VERSION@
 Requires: libgdaex
 Libs: -L${libdir} -lconfi
