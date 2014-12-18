@@ -356,17 +356,19 @@ confi_key_set_key (Confi *confi,
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	sql = g_strdup_printf ("UPDATE %cvalues%c SET "
-	                              "%ckey%c = '%s', value = '%s', description = '%s' "
-	                              "WHERE id_configs = %d "
-	                              "AND id = %d",
-	                              priv->chrquot, priv->chrquot,
-	                              priv->chrquot, priv->chrquot,
-	                              gdaex_strescape (ck->key, NULL),
-	                              gdaex_strescape (ck->value, NULL),
-	                              gdaex_strescape (ck->description, NULL),
-	                              priv->id_config,
-	                              ck->id);
+	sql = g_strdup_printf ("UPDATE %cvalues%c"
+	                       " SET %ckey%c = '%s',"
+	                       " value = '%s',"
+	                       " description = '%s'"
+	                       " WHERE id_configs = %d"
+	                       " AND id = %d",
+	                       priv->chrquot, priv->chrquot,
+	                       priv->chrquot, priv->chrquot,
+	                       gdaex_strescape (ck->key, NULL),
+	                       gdaex_strescape (ck->value, NULL),
+	                       gdaex_strescape (ck->description, NULL),
+	                       priv->id_config,
+	                       ck->id);
 
 	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 	g_free (sql);

@@ -336,12 +336,13 @@ confi_db_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode, gint
 
 	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
-	sql = g_strdup_printf ("SELECT * FROM %cvalues%c "
-	                              "WHERE id_configs = %d AND "
-	                              "id_parent = %d",
-	                              priv->chrquot, priv->chrquot,
-	                              priv->id_config,
-	                              idParent);
+	sql = g_strdup_printf ("SELECT *"
+	                       " FROM %cvalues%c"
+	                       " WHERE id_configs = %d"
+	                       " AND id_parent = %d",
+	                       priv->chrquot, priv->chrquot,
+	                       priv->id_config,
+	                       idParent);
 
 	dm = gdaex_query (priv->gdaex, sql);
 	g_free (sql);
@@ -468,13 +469,14 @@ confi_db_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, co
 	ret = FALSE;
 	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
 		{
-			sql = g_strdup_printf ("UPDATE %cvalues%c SET value = '%s' "
-			                              "WHERE id_configs = %d "
-			                              "AND id = %d ",
-			                              priv->chrquot, priv->chrquot,
-			                              gdaex_strescape (value, NULL),
-			                              priv->id_config,
-			                              gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
+			sql = g_strdup_printf ("UPDATE %cvalues%c"
+			                       " SET value = '%s'"
+			                       " WHERE id_configs = %d"
+			                       " AND id = %d",
+			                       priv->chrquot, priv->chrquot,
+			                       gdaex_strescape (value, NULL),
+			                       priv->id_config,
+			                       gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
 			ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 			g_free (sql);
 		}
@@ -563,41 +565,82 @@ static ConfiKey
 
 	if (id_parent > -1)
 		{
-			id = 0;
+			key_ = g_strdup (key);
+			g_strstrip (key_);
 
-			/* find new id */
-			sql = g_strdup_printf ("SELECT MAX(id) FROM %cvalues%c "
-			                       "WHERE id_configs = %d ",
-			                       priv->chrquot, priv->chrquot,
-			                       priv->id_config);
-			dm = gdaex_query (priv->gdaex, sql);
-			g_free (sql);
-			if (dm != NULL)
-				{
-					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
-					g_object_unref (dm);
-				}
-			id++;
-
-			key_ = g_strstrip (g_strdup (key));
-
-			sql = g_strdup_printf ("INSERT INTO %cvalues%c "
-			                       "(id_configs, id, id_parent, %ckey%c, value) "
-			                       "VALUES (%d, %d, %d, '%s', '%s')",
-			                       priv->chrquot, priv->chrquot,
+			/* find if key exists */
+			sql = g_strdup_printf ("SELECT id"
+			                       " FROM %cvalues%c"
+			                       " WHERE id_configs = %d"
+			                       " AND name = '%s'",
 			                       priv->chrquot, priv->chrquot,
 			                       priv->id_config,
-			                       id,
-			                       id_parent,
-			                       gdaex_strescape (key_, NULL),
-			                       "");
-			if (gdaex_execute (priv->gdaex, sql) == -1)
-				{
-					/* TO DO */
-					g_free (sql);
-					return NULL;
-				}
+			                       gdaex_strescape (key_, NULL));
+			dm = gdaex_query (priv->gdaex, sql);
 			g_free (sql);
+			if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
+				{
+					g_free (sql);
+					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
+					g_object_unref (dm);
+
+					sql = g_strdup_printf ("UPDATE %cvalues%c"
+					                       " SET %ckey%c = '%s',"
+					                       " value = '%s',"
+					                       " WHERE id_configs = %d"
+					                       " AND id = %d",
+					                       priv->chrquot, priv->chrquot,
+					                       priv->chrquot, priv->chrquot,
+					                       gdaex_strescape (key_, NULL),
+					                       gdaex_strescape (ck->value, NULL),
+					                       priv->id_config,
+					                       id);
+					if (gdaex_execute (priv->gdaex, sql) == -1)
+						{
+							/* TO DO */
+							g_free (sql);
+							return NULL;
+						}
+					g_free (sql);
+				}
+			else
+				{
+					g_free (sql);
+					id = 0;
+
+					/* find new id */
+					sql = g_strdup_printf ("SELECT MAX(id)"
+					                       " FROM %cvalues%c"
+					                       " WHERE id_configs = %d",
+					                       priv->chrquot, priv->chrquot,
+					                       priv->id_config);
+					dm = gdaex_query (priv->gdaex, sql);
+					g_free (sql);
+					if (dm != NULL)
+						{
+							id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
+							g_object_unref (dm);
+						}
+					id++;
+
+					sql = g_strdup_printf ("INSERT INTO %cvalues%c"
+					                       " (id_configs, id, id_parent, %ckey%c, value)"
+					                       " VALUES (%d, %d, %d, '%s', '%s')",
+					                       priv->chrquot, priv->chrquot,
+					                       priv->chrquot, priv->chrquot,
+					                       priv->id_config,
+					                       id,
+					                       id_parent,
+					                       gdaex_strescape (key_, NULL),
+					                       "");
+					if (gdaex_execute (priv->gdaex, sql) == -1)
+						{
+							/* TO DO */
+							g_free (sql);
+							return NULL;
+						}
+					g_free (sql);
+				}
 
 			ck = g_new0 (ConfiKey, 1);
 			ck->id_config = priv->id_config;
