@@ -214,6 +214,26 @@ ConfiKey
 }
 
 /**
+ * confi_pluggable_key_set_key:
+ * @pluggable: a #ConfiPluggable object.
+ * @ck: a #ConfiKey struct.
+ *
+ */
+gboolean
+confi_pluggable_key_set_key (ConfiPluggable *pluggable,
+                   ConfiKey *ck)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->key_set_key != NULL, FALSE);
+
+	return iface->key_set_key (pluggable, ck);
+}
+
+/**
  * confi_pluggable_path_get_confi_key:
  * @pluggable: a #ConfiPluggable object.
  * @path: the key's path to get.

@@ -61,13 +61,19 @@ struct _ConfiPluggableInterface {
 	                            const gchar *filter);
 	gchar *(*path_get_value) (ConfiPluggable *pluggable, const gchar *path);
 	gboolean (*path_set_value) (ConfiPluggable *pluggable,
-	                               const gchar *path,
-	                               const gchar *value);
+	                            const gchar *path,
+	                            const gchar *value);
 	GNode *(*get_tree) (ConfiPluggable *pluggable);
-	ConfiKey *(*add_key) (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value);
+	ConfiKey *(*add_key) (ConfiPluggable *pluggable,
+	                      const gchar *parent,
+	                      const gchar *key,
+	                      const gchar *value);
 	ConfiKey *(*path_get_confi_key) (ConfiPluggable *pluggable, const gchar *path);
-	gboolean (*remove_path) (ConfiPluggable *pluggable, const gchar *path);
+	gboolean (*remove_path) (ConfiPluggable *pluggable,
+	                         const gchar *path);
 	gboolean (*remove) (ConfiPluggable *pluggable);
+	gboolean (*key_set_key) (ConfiPluggable *pluggable,
+	                         ConfiKey *ck);
 };
 
 /*
@@ -90,6 +96,8 @@ ConfiKey *confi_pluggable_add_key (ConfiPluggable *pluggable,
                                    const gchar *parent,
                                    const gchar *key,
                                    const gchar *value);
+gboolean confi_pluggable_key_set_key (ConfiPluggable *pluggable,
+                   ConfiKey *ck);
 ConfiKey *confi_pluggable_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path);
 gboolean confi_pluggable_remove_path (ConfiPluggable *pluggable, const gchar *path);
 gboolean confi_pluggable_remove (ConfiPluggable *pluggable);

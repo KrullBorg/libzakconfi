@@ -687,6 +687,35 @@ static ConfiKey
 	return ck;
 }
 
+static gboolean
+confi_db_plugin_key_set_key (ConfiPluggable *pluggable,
+                             ConfiKey *ck)
+{
+	gboolean ret;
+	gchar *sql;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	sql = g_strdup_printf ("UPDATE %cvalues%c"
+	                       " SET %ckey%c = '%s',"
+	                       " value = '%s',"
+	                       " description = '%s'"
+	                       " WHERE id_configs = %d"
+	                       " AND id = %d",
+	                       priv->chrquot, priv->chrquot,
+	                       priv->chrquot, priv->chrquot,
+	                       gdaex_strescape (ck->key, NULL),
+	                       gdaex_strescape (ck->value, NULL),
+	                       gdaex_strescape (ck->description, NULL),
+	                       priv->id_config,
+	                       ck->id);
+
+	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
+	g_free (sql);
+
+	return ret;
+}
+
 static ConfiKey
 *confi_db_plugin_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
 {
@@ -871,6 +900,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->path_set_value = confi_db_plugin_path_set_value;
 	iface->get_tree = confi_db_plugin_get_tree;
 	iface->add_key = confi_db_plugin_add_key;
+	iface->key_set_key = confi_db_plugin_key_set_key;
 	iface->path_get_confi_key = confi_db_plugin_path_get_confi_key;
 	iface->remove_path = confi_db_plugin_remove_path;
 	iface->remove = confi_db_plugin_remove;

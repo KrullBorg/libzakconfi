@@ -469,6 +469,23 @@ static ConfiKey
 	return ck;
 }
 
+static gboolean
+confi_file_plugin_key_set_key (ConfiPluggable *pluggable,
+                               ConfiKey *ck)
+{
+	gboolean ret;
+
+	gchar *path;
+
+	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	path = g_strdup_printf ("%s/%s", ck->path, ck->key);
+	ret = confi_file_plugin_path_set_value (pluggable, path, ck->value);
+	g_free (path);
+
+	return ret;
+}
+
 static ConfiKey
 *confi_file_plugin_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
 {
@@ -586,6 +603,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->path_set_value = confi_file_plugin_path_set_value;
 	iface->get_tree = confi_file_plugin_get_tree;
 	iface->add_key = confi_file_plugin_add_key;
+	iface->key_set_key = confi_file_plugin_key_set_key;
 	iface->path_get_confi_key = confi_file_plugin_path_get_confi_key;
 	iface->remove_path = confi_file_plugin_remove_path;
 	iface->remove = confi_file_plugin_remove;
