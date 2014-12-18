@@ -38,7 +38,7 @@ if HAVE_INTROSPECTION
 introspection_sources = $(libconfi_la_SOURCES) $(libconfi_include_HEADERS)
 
 Confi-1.0.gir: libconfi.la
-Confi_1_0_gir_INCLUDES = Gda-5.0
+Confi_1_0_gir_INCLUDES = Gda-5.0 Peas-1.0
 Confi_1_0_gir_CFLAGS = $(AM_CPPFLAGS)
 Confi_1_0_gir_LIBS = libconfi.la
 Confi_1_0_gir_FILES = $(introspection_sources)

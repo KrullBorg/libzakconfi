@@ -191,7 +191,11 @@ confi_db_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 	gchar *sql;
 	GdaDataModel *dm;
 
-	strs = g_strsplit (cnc_string, ";", -1);
+	gchar *cnc_string_;
+
+	cnc_string_ = g_strdup_printf ("%s;", cnc_string);
+	strs = g_strsplit (cnc_string_, ";", -1);
+	g_free (cnc_string_);
 
 	gstr_cnc_string = g_string_new ("");
 
@@ -501,7 +505,10 @@ GNode
 	ck->id_config = priv->id_config;
 	ck->id = 0;
 	ck->id_parent = 0;
+	ck->path = "";
+	ck->description = "";
 	ck->key = g_strdup ("/");
+	ck->value = "";
 
 	node = g_node_new (ck);
 

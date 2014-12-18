@@ -1,7 +1,7 @@
 [Plugin]
-Module=db
-Name=DB
-Description=Read configuration from a database, based on libgda (via libgdaex).
+Module=file
+Name=File
+Description=Read configuration from a ini file.
 Authors=Andrea Zagli <azagli@libero.it>
 Copyright=Copyright © 2014 Andrea Zagli
 Website=http://saetta.ns0.it/
