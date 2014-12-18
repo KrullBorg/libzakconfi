@@ -508,6 +508,38 @@ static ConfiKey
 	return ck;
 }
 
+static gboolean
+confi_file_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
+{
+	gboolean ret;
+
+	gchar *group;
+	gchar *key;
+
+	GError *error;
+
+	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	group = NULL;
+	key = NULL;
+	if (confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+		{
+			error = NULL;
+			ret = g_key_file_remove_key (priv->kfile, group, key, &error);
+			if (error != NULL)
+				{
+					g_warning ("Error on removing key from file: %s.",
+					           error != NULL && error->message != NULL ? error->message : "no details");
+				}
+		}
+	else
+		{
+			ret = FALSE;
+		}
+
+	return ret;
+}
+
 static void
 confi_file_plugin_class_init (ConfiFilePluginClass *klass)
 {
@@ -535,6 +567,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->get_tree = confi_file_plugin_get_tree;
 	iface->add_key = confi_file_plugin_add_key;
 	iface->path_get_confi_key = confi_file_plugin_path_get_confi_key;
+	iface->remove_path = confi_file_plugin_remove_path;
 }
 
 static void

@@ -729,6 +729,90 @@ static ConfiKey
 	return ck;
 }
 
+static gboolean
+confi_db_plugin_delete_id_from_db_values (ConfiPluggable *pluggable, gint id)
+{
+	gboolean ret;
+	gchar *sql;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	sql = g_strdup_printf ("DELETE FROM %cvalues%c"
+	                       " WHERE id_configs = %d"
+	                       " AND id = %d",
+	                       priv->chrquot, priv->chrquot,
+	                       priv->id_config,
+	                       id);
+
+	if (gdaex_execute (priv->gdaex, sql) >= 0)
+		{
+			ret = TRUE;
+		}
+	else
+		{
+			ret = FALSE;
+		}
+	g_free (sql);
+
+	return ret;
+}
+
+static gboolean
+confi_db_plugin_remove_path_traverse_func (GNode *node, gpointer data)
+{
+	ConfiKey *ck = (ConfiKey *)node->data;
+	if (ck->id != 0)
+		{
+			confi_db_plugin_delete_id_from_db_values ((ConfiPluggable *)data, ck->id);
+		}
+
+	return FALSE;
+}
+
+static gboolean
+confi_db_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
+{
+	gboolean ret = FALSE;
+	GdaDataModel *dm;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	dm = confi_db_plugin_path_get_data_model (pluggable, confi_path_normalize (pluggable, path));
+
+	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
+		{
+			gchar *path_ = g_strdup (path);
+
+			/* removing every child key */
+			GNode *node, *root;
+			gint id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
+
+			node = g_node_new (path_);
+			confi_db_plugin_get_children (pluggable, node, id, path_);
+
+			root = g_node_get_root (node);
+
+			if (g_node_n_nodes (root, G_TRAVERSE_ALL) > 1)
+				{
+					g_node_traverse (root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
+				}
+
+			/* removing the path */
+			ret = confi_db_plugin_delete_id_from_db_values (pluggable, id);
+		}
+	else
+		{
+			g_warning ("Path %s doesn't exists.", path);
+		}
+	if (dm != NULL)
+		{
+			g_object_unref (dm);
+		}
+
+	return ret;
+}
+
+
 static void
 confi_db_plugin_class_init (ConfiDBPluginClass *klass)
 {
@@ -756,6 +840,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->get_tree = confi_db_plugin_get_tree;
 	iface->add_key = confi_db_plugin_add_key;
 	iface->path_get_confi_key = confi_db_plugin_path_get_confi_key;
+	iface->remove_path = confi_db_plugin_remove_path;
 }
 
 static void

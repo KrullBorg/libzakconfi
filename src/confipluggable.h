@@ -66,6 +66,8 @@ struct _ConfiPluggableInterface {
 	GNode *(*get_tree) (ConfiPluggable *pluggable);
 	ConfiKey *(*add_key) (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value);
 	ConfiKey *(*path_get_confi_key) (ConfiPluggable *pluggable, const gchar *path);
+	gboolean (*remove_path) (ConfiPluggable *pluggable, const gchar *path);
+
 };
 
 /*
@@ -89,6 +91,7 @@ ConfiKey *confi_pluggable_add_key (ConfiPluggable *pluggable,
                                    const gchar *key,
                                    const gchar *value);
 ConfiKey *confi_pluggable_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path);
+gboolean confi_pluggable_remove_path (ConfiPluggable *pluggable, const gchar *path);
 
 
 G_END_DECLS

@@ -232,3 +232,23 @@ ConfiKey
 
 	return iface->path_get_confi_key (pluggable, path);
 }
+
+/**
+ * confi_pluggable_remove_path:
+ * @confi: a #Confi object.
+ * @path: the path to remove.
+ *
+ * Removes @path and every child key.
+ */
+gboolean
+confi_pluggable_remove_path (ConfiPluggable *pluggable, const gchar *path)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->remove_path != NULL, FALSE);
+
+	return iface->remove_path (pluggable, path);
+}

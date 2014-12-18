@@ -50,9 +50,6 @@ static void confi_get_property (GObject *object,
 
 static ConfiPluggable *confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string);
 
-static gboolean confi_delete_id_from_db_values (Confi *confi, gint id);
-static gboolean confi_remove_path_traverse_func (GNode *node, gpointer data);
-
 #define CONFI_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TYPE_CONFI, ConfiPrivate))
 
 typedef struct _ConfiPrivate ConfiPrivate;
@@ -386,41 +383,17 @@ confi_key_set_key (Confi *confi,
 gboolean
 confi_remove_path (Confi *confi, const gchar *path)
 {
-	gboolean ret = FALSE;
-	GdaDataModel *dm;
-
+	gboolean ret;
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	//dm = path_get_data_model (confi, path_normalize (confi, path));
-
-	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
+	if (priv->pluggable == NULL)
 		{
-			gchar *path_ = g_strdup (path);
-		
-			/* removing every child key */
-			GNode *node, *root;
-			gint id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
-
-			node = g_node_new (path_);
-			get_children (confi, node, id, path_);
-
-			root = g_node_get_root (node);
-		
-			if (g_node_n_nodes (root, G_TRAVERSE_ALL) > 1)
-				{
-					g_node_traverse (root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, confi_remove_path_traverse_func, (gpointer)confi);
-				}
-
-			/* removing the path */
-			ret = confi_delete_id_from_db_values (confi, id);
+			g_warning ("Not initialized.");
+			ret = FALSE;
 		}
 	else
 		{
-			g_warning ("Path %s doesn't exists.", path);
-		}
-	if (dm != NULL)
-		{
-			g_object_unref (dm);
+			ret = confi_pluggable_remove_path (priv->pluggable, path);
 		}
 
 	return ret;
@@ -690,44 +663,4 @@ confi_get_property (GObject *object, guint property_id, GValue *value, GParamSpe
 				G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
 				break;
 		}
-}
-
-static gboolean
-confi_delete_id_from_db_values (Confi *confi, gint id)
-{
-	gboolean ret;
-	gchar *sql;
-
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
-
-	sql = g_strdup_printf ("DELETE FROM %cvalues%c "
-	                              "WHERE id_configs = %d "
-	                              "AND id = %d",
-	                              priv->chrquot, priv->chrquot,
-	                              priv->id_config,
-	                              id);
-
-	if (gdaex_execute (priv->gdaex, sql) >= 0)
-		{
-			ret = TRUE;
-		}
-	else
-		{
-			ret = FALSE;
-		}
-	g_free (sql);
-
-	return ret;
-}
-
-static gboolean
-confi_remove_path_traverse_func (GNode *node, gpointer data)
-{
-	ConfiKey *ck = (ConfiKey *)node->data;
-	if (ck->id != 0)
-		{
-			confi_delete_id_from_db_values ((Confi *)data, ck->id);
-		}
-
-	return FALSE;
 }
