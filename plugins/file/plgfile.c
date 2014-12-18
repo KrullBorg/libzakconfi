@@ -540,6 +540,26 @@ confi_file_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
 	return ret;
 }
 
+static gboolean
+confi_file_plugin_remove (ConfiPluggable *pluggable)
+{
+	gboolean ret;
+	GFile *gfile;
+
+	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	ret = TRUE;
+
+	gfile = g_file_new_for_path (priv->cnc_string);
+	if (gfile != NULL)
+		{
+			g_file_delete (gfile, NULL, NULL);
+		}
+	g_key_file_unref (priv->kfile);
+
+	return ret;
+}
+
 static void
 confi_file_plugin_class_init (ConfiFilePluginClass *klass)
 {
@@ -568,6 +588,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->add_key = confi_file_plugin_add_key;
 	iface->path_get_confi_key = confi_file_plugin_path_get_confi_key;
 	iface->remove_path = confi_file_plugin_remove_path;
+	iface->remove = confi_file_plugin_remove;
 }
 
 static void

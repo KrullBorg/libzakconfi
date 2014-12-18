@@ -490,33 +490,22 @@ gboolean
 confi_remove (Confi *confi)
 {
 	gboolean ret;
-	gchar *sql;
 
 	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
 
-	ret = TRUE;
-	sql = g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
-                           priv->chrquot,
-                           priv->chrquot,
-                           priv->id_config);
-	if (gdaex_execute (priv->gdaex, sql) == -1)
+	if (priv->pluggable == NULL)
 		{
-			g_free (sql);
+			g_warning ("Not initialized.");
 			ret = FALSE;
 		}
-	else 
+	else
 		{
-			g_free (sql);
-			sql = g_strdup_printf ("DELETE FROM configs WHERE id = %d",
-			                       priv->id_config);
-			if (gdaex_execute (priv->gdaex, sql) == -1)
-				{
-					ret = FALSE;
-				}
-			else
-				{
-					confi_destroy (confi);
-				}
+			ret = confi_pluggable_remove (priv->pluggable);
+		}
+
+	if (ret)
+		{
+			confi_destroy (confi);
 		}
 
 	return ret;
@@ -536,6 +525,7 @@ confi_destroy (Confi *confi)
 	g_free (priv->name);
 	g_free (priv->description);
 	g_free (priv->root);
+	g_object_unref (priv->pluggable);
 }
 
 /**

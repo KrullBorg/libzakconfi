@@ -235,7 +235,7 @@ ConfiKey
 
 /**
  * confi_pluggable_remove_path:
- * @confi: a #Confi object.
+ * @pluggable: a #ConfiPluggable object.
  * @path: the path to remove.
  *
  * Removes @path and every child key.
@@ -251,4 +251,23 @@ confi_pluggable_remove_path (ConfiPluggable *pluggable, const gchar *path)
 	g_return_val_if_fail (iface->remove_path != NULL, FALSE);
 
 	return iface->remove_path (pluggable, path);
+}
+
+/**
+ * confi_pluggable_remove:
+ * @pluggable: a #ConfiPluggable object.
+ *
+ * Remove a configuration from databases and destroy the relative object.
+ */
+gboolean
+confi_pluggable_remove (ConfiPluggable *pluggable)
+{
+	ConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->remove != NULL, FALSE);
+
+	return iface->remove (pluggable);
 }

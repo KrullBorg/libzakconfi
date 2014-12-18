@@ -812,6 +812,38 @@ confi_db_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
 	return ret;
 }
 
+static gboolean
+confi_db_plugin_remove (ConfiPluggable *pluggable)
+{
+	gboolean ret;
+	gchar *sql;
+
+	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	ret = TRUE;
+	sql = g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
+                           priv->chrquot,
+                           priv->chrquot,
+                           priv->id_config);
+	if (gdaex_execute (priv->gdaex, sql) == -1)
+		{
+			g_free (sql);
+			ret = FALSE;
+		}
+	else
+		{
+			g_free (sql);
+			sql = g_strdup_printf ("DELETE FROM configs WHERE id = %d",
+			                       priv->id_config);
+			if (gdaex_execute (priv->gdaex, sql) == -1)
+				{
+					ret = FALSE;
+				}
+			g_free (sql);
+		}
+
+	return ret;
+}
 
 static void
 confi_db_plugin_class_init (ConfiDBPluginClass *klass)
@@ -841,6 +873,7 @@ confi_pluggable_iface_init (ConfiPluggableInterface *iface)
 	iface->add_key = confi_db_plugin_add_key;
 	iface->path_get_confi_key = confi_db_plugin_path_get_confi_key;
 	iface->remove_path = confi_db_plugin_remove_path;
+	iface->remove = confi_db_plugin_remove;
 }
 
 static void
