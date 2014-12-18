@@ -21,6 +21,8 @@
 
 #include <glib-object.h>
 
+#include <libpeas/peas.h>
+
 #include "commons.h"
 #include "confipluggable.h"
 
@@ -52,6 +54,8 @@ struct _ConfiClass
 GType confi_get_type (void);
 
 Confi *confi_new (const gchar *cnc_string);
+
+PeasPluginInfo *confi_get_plugin_info (Confi *confi);
 
 GList *confi_get_configs_list (const gchar *cnc_string,
                                const gchar *filter);

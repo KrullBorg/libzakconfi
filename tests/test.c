@@ -24,10 +24,7 @@ traverse_func (GNode *node,
                gpointer data)
 {
 	ConfiKey *ck = (ConfiKey *)node->data;
-	if (ck->id != 0)
-		{
-			g_printf ("%s%s%s\n", ck->path, strcmp (ck->path, "") == 0 ? "" : "/", ck->key);
-		}
+	g_printf ("%s%s%s => %s\n", ck->path, g_strcmp0 (ck->path, "") == 0 ? "" : "/", ck->key, ck->value);
 
 	return FALSE;
 }
@@ -37,6 +34,7 @@ main (int argc, char **argv)
 {
 	PeasEngine *engine;
 	Confi *confi;
+	PeasPluginInfo *ppinfo;
 	GList *confis;
 	GNode *tree;
 
@@ -70,6 +68,13 @@ main (int argc, char **argv)
 			g_error ("Error on configuration initialization.");
 			return 0;
 		}
+
+	ppinfo = confi_get_plugin_info (confi);
+	g_printf ("Plugin info\n");
+	g_printf ("Name: %s\n", peas_plugin_info_get_name (ppinfo));
+	g_printf ("Module dir: %s\n", peas_plugin_info_get_module_dir (ppinfo));
+	g_printf ("Module name: %s\n", peas_plugin_info_get_module_name (ppinfo));
+	g_printf ("\n");
 
 	gchar *val = confi_path_get_value (confi, "folder/key1/key1_2");
 	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", val);

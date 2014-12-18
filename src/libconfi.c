@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include <libgdaex/libgdaex.h>
-#include <libpeas/peas.h>
 
 #include "libconfi.h"
 
@@ -171,6 +170,26 @@ Confi
 		}
 
 	return confi;
+}
+
+PeasPluginInfo
+*confi_get_plugin_info (Confi *confi)
+{
+	PeasPluginInfo *ppinfo;
+
+	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+
+	if (priv->pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			ppinfo = NULL;
+		}
+	else
+		{
+			ppinfo = peas_extension_base_get_plugin_info ((PeasExtensionBase *)priv->pluggable);
+		}
+
+	return ppinfo;
 }
 
 /**
