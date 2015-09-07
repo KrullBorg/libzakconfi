@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/python
 
 from gi.repository import GLib
 from gi.repository import Confi
