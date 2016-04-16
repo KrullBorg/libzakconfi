@@ -9,7 +9,7 @@ CREATE TABLE configs (
 CREATE TABLE "values" (
     id_configs integer NOT NULL,
     id integer NOT NULL,
-    id_parent integer,
+    id_parent integer DEFAULT 0,
     "key" varchar(50) DEFAULT '',
     value text DEFAULT '',
     description varchar(255) DEFAULT '',
