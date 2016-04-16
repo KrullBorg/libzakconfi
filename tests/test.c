@@ -21,7 +21,7 @@
 
 #include <libgdaex/libgdaex.h>
 
-#include <libzakconfi.h>
+#include "libzakconfi.h"
 
 gboolean
 traverse_func (GNode *node,
