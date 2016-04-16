@@ -8,5 +8,5 @@ Name: @PACKAGE_NAME@
 Description: Library to manage configurations based on plugins (db, file, etc.)
 Version: @PACKAGE_VERSION@
 Requires: libgdaex
-Libs: -L${libdir} -lconfi
+Libs: -L${libdir} -lzakconfi
 Cflags: -I${includedir}

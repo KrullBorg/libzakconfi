@@ -1,8 +1,8 @@
 /*
  * commons.c
- * This file is part of libconfi
+ * This file is part of libzakconfi
  *
- * Copyright (C) 2014 Andrea Zagli <azagli@libero.it>
+ * Copyright (C) 2014-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Library General Public License as published by
@@ -25,12 +25,12 @@
 
 #include <commons.h>
 
-ConfiConfi
-*confi_confi_copy (ConfiConfi *confi)
+ZakConfiConfi
+*zak_confi_confi_copy (ZakConfiConfi *confi)
 {
-	ConfiConfi *b;
+	ZakConfiConfi *b;
 
-	b = g_slice_new (ConfiConfi);
+	b = g_slice_new (ZakConfiConfi);
 	b->name = g_strdup (confi->name);
 	b->description = g_strdup (confi->description);
 
@@ -38,21 +38,21 @@ ConfiConfi
 }
 
 void
-confi_confi_free (ConfiConfi *confi)
+zak_confi_confi_free (ZakConfiConfi *confi)
 {
 	g_free (confi->name);
 	g_free (confi->description);
-	g_slice_free (ConfiConfi, confi);
+	g_slice_free (ZakConfiConfi, confi);
 }
 
-G_DEFINE_BOXED_TYPE (ConfiConfi, confi_confi, confi_confi_copy, confi_confi_free)
+G_DEFINE_BOXED_TYPE (ZakConfiConfi, zak_confi_confi, zak_confi_confi_copy, zak_confi_confi_free)
 
-ConfiKey
-*confi_key_copy (ConfiKey *key)
+ZakConfiKey
+*zak_confi_key_copy (ZakConfiKey *key)
 {
-	ConfiKey *b;
+	ZakConfiKey *b;
 
-	b = g_slice_new (ConfiKey);
+	b = g_slice_new (ZakConfiKey);
 	b->id_config = key->id_config;
 	b->id = key->id;
 	b->id_parent = key->id_parent;
@@ -65,13 +65,13 @@ ConfiKey
 }
 
 void
-confi_key_free (ConfiKey *key)
+zak_confi_key_free (ZakConfiKey *key)
 {
 	g_free (key->key);
 	g_free (key->value);
 	g_free (key->description);
 	g_free (key->path);
-	g_slice_free (ConfiKey, key);
+	g_slice_free (ZakConfiKey, key);
 }
 
-G_DEFINE_BOXED_TYPE (ConfiKey, confi_key, confi_key_copy, confi_key_free)
+G_DEFINE_BOXED_TYPE (ZakConfiKey, zak_confi_key, zak_confi_key_copy, zak_confi_key_free)

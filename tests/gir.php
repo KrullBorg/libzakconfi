@@ -1,6 +1,6 @@
 <?php
 
-var_dump(GIRepository\load_ns('Confi'));
+var_dump(GIRepository\load_ns('ZakConfi'));
 
 /*$confi = new Confi\Confi;
 var_dump ($confi);

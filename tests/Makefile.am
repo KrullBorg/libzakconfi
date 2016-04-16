@@ -2,7 +2,7 @@ AM_CPPFLAGS = $(LIBCONFI_CFLAGS) \
               -I../src
 
 LIBS = $(LIBCONFI_LIBS) \
-       -L../src -lconfi
+       -L../src -lzakconfi
 
 noinst_PROGRAMS = test
 

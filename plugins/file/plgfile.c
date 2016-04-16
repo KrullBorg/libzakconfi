@@ -1,8 +1,8 @@
 /*
  * plgfile.c
- * This file is part of confi
+ * This file is part of libzakconfi
  *
- * Copyright (C) 2014 Andrea Zagli
+ * Copyright (C) 2014-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Library General Public License as published by
@@ -31,23 +31,23 @@
 
 #include <libpeas/peas.h>
 
-#include "../../src/libconfi.h"
+#include "../../src/libzakconfi.h"
 #include "../../src/confipluggable.h"
 
 #include "plgfile.h"
 
-static void confi_pluggable_iface_init (ConfiPluggableInterface *iface);
+static void zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface);
 
-static gboolean confi_file_plugin_path_get_group_and_key (ConfiPluggable *pluggable, const gchar *path, gchar **group, gchar **key);
-static gchar *confi_file_plugin_path_get_value_from_file (ConfiPluggable *pluggable, const gchar *path);
-static gchar *confi_file_plugin_path_get_value (ConfiPluggable *pluggable, const gchar *path);
-static gboolean confi_file_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, const gchar *value);
-static void confi_file_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode);
+static gboolean zak_confi_file_plugin_path_get_group_and_key (ZakConfiPluggable *pluggable, const gchar *path, gchar **group, gchar **key);
+static gchar *zak_confi_file_plugin_path_get_value_from_file (ZakConfiPluggable *pluggable, const gchar *path);
+static gchar *zak_confi_file_plugin_path_get_value (ZakConfiPluggable *pluggable, const gchar *path);
+static gboolean zak_confi_file_plugin_path_set_value (ZakConfiPluggable *pluggable, const gchar *path, const gchar *value);
+static void zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode);
 
-#define CONFI_FILE_PLUGIN_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), CONFI_TYPE_FILE_PLUGIN, ConfiFilePluginPrivate))
+#define ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), ZAK_CONFI_TYPE_FILE_PLUGIN, ZakConfiFilePluginPrivate))
 
-typedef struct _ConfiFilePluginPrivate ConfiFilePluginPrivate;
-struct _ConfiFilePluginPrivate
+typedef struct _ZakConfiFilePluginPrivate ZakConfiFilePluginPrivate;
+struct _ZakConfiFilePluginPrivate
 	{
 		gchar *cnc_string;
 
@@ -58,12 +58,12 @@ struct _ConfiFilePluginPrivate
 		gchar *root;
 	};
 
-G_DEFINE_DYNAMIC_TYPE_EXTENDED (ConfiFilePlugin,
-                                confi_file_plugin,
+G_DEFINE_DYNAMIC_TYPE_EXTENDED (ZakConfiFilePlugin,
+                                zak_confi_file_plugin,
                                 PEAS_TYPE_EXTENSION_BASE,
                                 0,
-                                G_IMPLEMENT_INTERFACE_DYNAMIC (CONFI_TYPE_PLUGGABLE,
-                                                               confi_pluggable_iface_init))
+                                G_IMPLEMENT_INTERFACE_DYNAMIC (ZAK_CONFI_TYPE_PLUGGABLE,
+                                                               zak_confi_pluggable_iface_init))
 
 enum {
 	PROP_0,
@@ -74,32 +74,32 @@ enum {
 };
 
 static void
-confi_file_plugin_set_property (GObject      *object,
+zak_confi_file_plugin_set_property (GObject      *object,
                               guint         prop_id,
                               const GValue *value,
                               GParamSpec   *pspec)
 {
-	ConfiFilePlugin *plugin = CONFI_FILE_PLUGIN (object);
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiFilePlugin *plugin = ZAK_CONFI_FILE_PLUGIN (object);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
 
 	switch (prop_id)
 		{
 			case PROP_CNC_STRING:
-				confi_file_plugin_initialize ((ConfiPluggable *)plugin, g_value_get_string (value));
+				zak_confi_file_plugin_initialize ((ZakConfiPluggable *)plugin, g_value_get_string (value));
 				break;
 
 			case PROP_NAME:
 				priv->name = g_strdup (g_value_get_string (value));
-				confi_file_plugin_path_set_value ((ConfiPluggable *)plugin, "/CONFI/name", priv->name);
+				zak_confi_file_plugin_path_set_value ((ZakConfiPluggable *)plugin, "/CONFI/name", priv->name);
 				break;
 
 			case PROP_DESCRIPTION:
 				priv->description = g_strdup (g_value_get_string (value));
-				confi_file_plugin_path_set_value ((ConfiPluggable *)plugin, "/CONFI/description", priv->description);
+				zak_confi_file_plugin_path_set_value ((ZakConfiPluggable *)plugin, "/CONFI/description", priv->description);
 				break;
 
 			case PROP_ROOT:
-				priv->root = confi_normalize_root (g_value_get_string (value));
+				priv->root = zak_confi_normalize_root (g_value_get_string (value));
 				break;
 
 			default:
@@ -109,13 +109,13 @@ confi_file_plugin_set_property (GObject      *object,
 }
 
 static void
-confi_file_plugin_get_property (GObject    *object,
+zak_confi_file_plugin_get_property (GObject    *object,
                               guint       prop_id,
                               GValue     *value,
                               GParamSpec *pspec)
 {
-	ConfiFilePlugin *plugin = CONFI_FILE_PLUGIN (object);
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiFilePlugin *plugin = ZAK_CONFI_FILE_PLUGIN (object);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
 
 	switch (prop_id)
 		{
@@ -142,9 +142,9 @@ confi_file_plugin_get_property (GObject    *object,
 }
 
 static void
-confi_file_plugin_init (ConfiFilePlugin *plugin)
+zak_confi_file_plugin_init (ZakConfiFilePlugin *plugin)
 {
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
 
 	priv->cnc_string = NULL;
 	priv->kfile = NULL;
@@ -153,21 +153,21 @@ confi_file_plugin_init (ConfiFilePlugin *plugin)
 }
 
 static void
-confi_file_plugin_finalize (GObject *object)
+zak_confi_file_plugin_finalize (GObject *object)
 {
-	ConfiFilePlugin *plugin = CONFI_FILE_PLUGIN (object);
+	ZakConfiFilePlugin *plugin = ZAK_CONFI_FILE_PLUGIN (object);
 
-	G_OBJECT_CLASS (confi_file_plugin_parent_class)->finalize (object);
+	G_OBJECT_CLASS (zak_confi_file_plugin_parent_class)->finalize (object);
 }
 
 gboolean
-confi_file_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
+zak_confi_file_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string)
 {
 	gboolean ret;
 	GError *error;
 
-	ConfiFilePlugin *plugin = CONFI_FILE_PLUGIN (pluggable);
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiFilePlugin *plugin = ZAK_CONFI_FILE_PLUGIN (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
 
 	priv->cnc_string = g_strdup (cnc_string);
 
@@ -196,7 +196,7 @@ confi_file_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string
 }
 
 static gboolean
-confi_file_plugin_path_get_group_and_key (ConfiPluggable *pluggable, const gchar *path, gchar **group, gchar **key)
+zak_confi_file_plugin_path_get_group_and_key (ZakConfiPluggable *pluggable, const gchar *path, gchar **group, gchar **key)
 {
 	gchar *path_;
 	gchar **tokens;
@@ -242,7 +242,7 @@ confi_file_plugin_path_get_group_and_key (ConfiPluggable *pluggable, const gchar
 }
 
 static gchar
-*confi_file_plugin_path_get_value_from_file (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_file_plugin_path_get_value_from_file (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gchar *ret;
 
@@ -251,13 +251,13 @@ static gchar
 
 	GError *error;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	if (path == NULL) return NULL;
 
 	group = NULL;
 	key = NULL;
-	if (!confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+	if (!zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
 		{
 			return NULL;
 		}
@@ -279,12 +279,12 @@ static gchar
 }
 
 static void
-confi_file_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode)
+zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode)
 {
 	gchar **groups;
 	gchar **keys;
-	guint lg;
-	guint lk;
+	gsize lg;
+	gsize lk;
 	guint g;
 	guint k;
 
@@ -295,13 +295,13 @@ confi_file_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode)
 
 	GNode *gNode;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	groups = g_key_file_get_groups (priv->kfile, &lg);
 
 	for (g = 0; g < lg; g++)
 		{
-			ConfiKey *ck = g_new0 (ConfiKey, 1);
+			ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
 			ck->key = g_strdup (groups[g]);
 			ck->value = "";
@@ -316,11 +316,11 @@ confi_file_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode)
 				{
 					for (k = 0; k < lk; k++)
 						{
-							ConfiKey *ck = g_new0 (ConfiKey, 1);
+							ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
 							ck->key = g_strdup (keys[k]);
 							ck->path = g_strdup (groups[g]);
-							ck->value = confi_file_plugin_path_get_value (pluggable, g_strdup_printf ("%s/%s", groups[g], keys[k]));
+							ck->value = zak_confi_file_plugin_path_get_value (pluggable, g_strdup_printf ("%s/%s", groups[g], keys[k]));
 							ck->description = g_key_file_get_comment (priv->kfile, groups[g], keys[k], NULL);
 
 							g_node_append_data (gNode, ck);
@@ -340,17 +340,17 @@ confi_file_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode)
 }
 
 static GList
-*confi_file_plugin_get_configs_list (ConfiPluggable *pluggable,
+*zak_confi_file_plugin_get_configs_list (ZakConfiPluggable *pluggable,
                                      const gchar *filter)
 {
 	GList *lst;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	lst = NULL;
 
-	ConfiConfi *confi;
-	confi = g_new0 (ConfiConfi, 1);
+	ZakConfiConfi *confi;
+	confi = g_new0 (ZakConfiConfi, 1);
 	confi->name = g_strdup (priv->name);
 	confi->description = g_strdup (priv->description);
 	lst = g_list_append (lst, confi);
@@ -359,28 +359,28 @@ static GList
 }
 
 static gchar
-*confi_file_plugin_path_get_value (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_file_plugin_path_get_value (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gchar *ret;
 	gchar *path_;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	ret = NULL;
 
-	path_ = confi_path_normalize (pluggable, path);
+	path_ = zak_confi_path_normalize (pluggable, path);
 	if (path_ == NULL)
 		{
 			return NULL;
 		}
 
-	ret = confi_file_plugin_path_get_value_from_file (pluggable, path_);
+	ret = zak_confi_file_plugin_path_get_value_from_file (pluggable, path_);
 
 	return ret;
 }
 
 static gboolean
-confi_file_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, const gchar *value)
+zak_confi_file_plugin_path_set_value (ZakConfiPluggable *pluggable, const gchar *path, const gchar *value)
 {
 	gboolean ret;
 
@@ -389,13 +389,13 @@ confi_file_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, 
 
 	GError *error;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	g_return_val_if_fail (value != NULL, FALSE);
 
 	group = NULL;
 	key = NULL;
-	if (!confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+	if (!zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
 		{
 			return FALSE;
 		}
@@ -415,13 +415,13 @@ confi_file_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, 
 }
 
 GNode
-*confi_file_plugin_get_tree (ConfiPluggable *pluggable)
+*zak_confi_file_plugin_get_tree (ZakConfiPluggable *pluggable)
 {
 	GNode *node;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
-	ConfiKey *ck = g_new0 (ConfiKey, 1);
+	ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
 	ck->path = "";
 	ck->description = "";
@@ -430,33 +430,33 @@ GNode
 
 	node = g_node_new (ck);
 
-	confi_file_plugin_get_children (pluggable, node);
+	zak_confi_file_plugin_get_children (pluggable, node);
 
 	return node;
 }
 
-static ConfiKey
-*confi_file_plugin_add_key (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
+static ZakConfiKey
+*zak_confi_file_plugin_add_key (ZakConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
 {
-	ConfiKey *ck;
+	ZakConfiKey *ck;
 	gchar *path;
 
 	gchar *group;
 	gchar *key_;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	ck = NULL;
 	path = g_strdup_printf ("%s/%s", parent, key);
-	if (confi_file_plugin_path_set_value (pluggable, path, value))
+	if (zak_confi_file_plugin_path_set_value (pluggable, path, value))
 		{
 			group = NULL;
 			key_ = NULL;
-			if (confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key_))
+			if (zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key_))
 				{
-					ck = g_new0 (ConfiKey, 1);
+					ck = g_new0 (ZakConfiKey, 1);
 					ck->key = g_strdup (key);
-					ck->value = confi_file_plugin_path_get_value (pluggable, path);
+					ck->value = zak_confi_file_plugin_path_get_value (pluggable, path);
 					ck->description = g_key_file_get_comment (priv->kfile, group, key, NULL);;
 					ck->path = g_strdup (path);
 
@@ -470,34 +470,34 @@ static ConfiKey
 }
 
 static gboolean
-confi_file_plugin_key_set_key (ConfiPluggable *pluggable,
-                               ConfiKey *ck)
+zak_confi_file_plugin_key_set_key (ZakConfiPluggable *pluggable,
+                               ZakConfiKey *ck)
 {
 	gboolean ret;
 
 	gchar *path;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	path = g_strdup_printf ("%s/%s", ck->path, ck->key);
-	ret = confi_file_plugin_path_set_value (pluggable, path, ck->value);
+	ret = zak_confi_file_plugin_path_set_value (pluggable, path, ck->value);
 	g_free (path);
 
 	return ret;
 }
 
-static ConfiKey
-*confi_file_plugin_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
+static ZakConfiKey
+*zak_confi_file_plugin_path_get_confi_key (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gchar *path_;
-	ConfiKey *ck;
+	ZakConfiKey *ck;
 
 	gchar *group;
 	gchar *key;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
-	path_ = confi_path_normalize (pluggable, path);
+	path_ = zak_confi_path_normalize (pluggable, path);
 	if (path_ == NULL)
 		{
 			return NULL;
@@ -505,11 +505,11 @@ static ConfiKey
 
 	group = NULL;
 	key = NULL;
-	if (confi_file_plugin_path_get_group_and_key (pluggable, path_, &group, &key))
+	if (zak_confi_file_plugin_path_get_group_and_key (pluggable, path_, &group, &key))
 		{
-			ck = g_new0 (ConfiKey, 1);
+			ck = g_new0 (ZakConfiKey, 1);
 			ck->key = g_strdup (key);
-			ck->value = confi_file_plugin_path_get_value (pluggable, path_);
+			ck->value = zak_confi_file_plugin_path_get_value (pluggable, path_);
 			ck->description = g_key_file_get_comment (priv->kfile, group, key, NULL);
 			ck->path = g_strdup (group);
 
@@ -526,7 +526,7 @@ static ConfiKey
 }
 
 static gboolean
-confi_file_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
+zak_confi_file_plugin_remove_path (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gboolean ret;
 
@@ -535,11 +535,11 @@ confi_file_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
 
 	GError *error;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	group = NULL;
 	key = NULL;
-	if (confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+	if (zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
 		{
 			error = NULL;
 			ret = g_key_file_remove_key (priv->kfile, group, key, &error);
@@ -558,12 +558,12 @@ confi_file_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
 }
 
 static gboolean
-confi_file_plugin_remove (ConfiPluggable *pluggable)
+zak_confi_file_plugin_remove (ZakConfiPluggable *pluggable)
 {
 	gboolean ret;
 	GFile *gfile;
 
-	ConfiFilePluginPrivate *priv = CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	ret = TRUE;
 
@@ -578,15 +578,15 @@ confi_file_plugin_remove (ConfiPluggable *pluggable)
 }
 
 static void
-confi_file_plugin_class_init (ConfiFilePluginClass *klass)
+zak_confi_file_plugin_class_init (ZakConfiFilePluginClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-	g_type_class_add_private (object_class, sizeof (ConfiFilePluginPrivate));
+	g_type_class_add_private (object_class, sizeof (ZakConfiFilePluginPrivate));
 
-	object_class->set_property = confi_file_plugin_set_property;
-	object_class->get_property = confi_file_plugin_get_property;
-	object_class->finalize = confi_file_plugin_finalize;
+	object_class->set_property = zak_confi_file_plugin_set_property;
+	object_class->get_property = zak_confi_file_plugin_get_property;
+	object_class->finalize = zak_confi_file_plugin_finalize;
 
 	g_object_class_override_property (object_class, PROP_CNC_STRING, "cnc_string");
 	g_object_class_override_property (object_class, PROP_NAME, "name");
@@ -595,31 +595,31 @@ confi_file_plugin_class_init (ConfiFilePluginClass *klass)
 }
 
 static void
-confi_pluggable_iface_init (ConfiPluggableInterface *iface)
+zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 {
-	iface->initialize = confi_file_plugin_initialize;
-	iface->get_configs_list = confi_file_plugin_get_configs_list;
-	iface->path_get_value = confi_file_plugin_path_get_value;
-	iface->path_set_value = confi_file_plugin_path_set_value;
-	iface->get_tree = confi_file_plugin_get_tree;
-	iface->add_key = confi_file_plugin_add_key;
-	iface->key_set_key = confi_file_plugin_key_set_key;
-	iface->path_get_confi_key = confi_file_plugin_path_get_confi_key;
-	iface->remove_path = confi_file_plugin_remove_path;
-	iface->remove = confi_file_plugin_remove;
+	iface->initialize = zak_confi_file_plugin_initialize;
+	iface->get_configs_list = zak_confi_file_plugin_get_configs_list;
+	iface->path_get_value = zak_confi_file_plugin_path_get_value;
+	iface->path_set_value = zak_confi_file_plugin_path_set_value;
+	iface->get_tree = zak_confi_file_plugin_get_tree;
+	iface->add_key = zak_confi_file_plugin_add_key;
+	iface->key_set_key = zak_confi_file_plugin_key_set_key;
+	iface->path_get_confi_key = zak_confi_file_plugin_path_get_confi_key;
+	iface->remove_path = zak_confi_file_plugin_remove_path;
+	iface->remove = zak_confi_file_plugin_remove;
 }
 
 static void
-confi_file_plugin_class_finalize (ConfiFilePluginClass *klass)
+zak_confi_file_plugin_class_finalize (ZakConfiFilePluginClass *klass)
 {
 }
 
 G_MODULE_EXPORT void
 peas_register_types (PeasObjectModule *module)
 {
-	confi_file_plugin_register_type (G_TYPE_MODULE (module));
+	zak_confi_file_plugin_register_type (G_TYPE_MODULE (module));
 
 	peas_object_module_register_extension_type (module,
-	                                            CONFI_TYPE_PLUGGABLE,
-	                                            CONFI_TYPE_FILE_PLUGIN);
+	                                            ZAK_CONFI_TYPE_PLUGGABLE,
+	                                            ZAK_CONFI_TYPE_FILE_PLUGIN);
 }

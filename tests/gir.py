@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 from gi.repository import GLib
-from gi.repository import Confi
+from gi.repository import ZakConfi
 
 # Create a new object
-confi = Confi.Confi.new("PostgreSQL://postgres:postgres@HOST=localhost;DB_NAME=confi", "Default", None, False)
+confi = ZakConfi.Confi.new("PostgreSQL://postgres:postgres@HOST=localhost;DB_NAME=confi", "Default", None, False)
 
 print("Properties of a Confi object: ")
 print(dir(confi.props))

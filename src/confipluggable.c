@@ -1,8 +1,8 @@
 /*
  * confipluggable.c
- * This file is part of libconfi
+ * This file is part of libzakconfi
  *
- * Copyright (C) 2014 Andrea Zagli <azagli@libero.it>
+ * Copyright (C) 2014-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Library General Public License as published by
@@ -32,17 +32,17 @@
  *
  **/
 
-G_DEFINE_INTERFACE(ConfiPluggable, confi_pluggable, G_TYPE_OBJECT)
+G_DEFINE_INTERFACE(ZakConfiPluggable, zak_confi_pluggable, G_TYPE_OBJECT)
 
 void
-confi_pluggable_default_init (ConfiPluggableInterface *iface)
+zak_confi_pluggable_default_init (ZakConfiPluggableInterface *iface)
 {
 	static gboolean initialized = FALSE;
 
 	if (!initialized)
 		{
 			/**
-			* ConfiPluggable:cnc_string:
+			* ZakConfiPluggable:cnc_string:
 			*
 			*/
 			g_object_interface_install_property (iface,
@@ -53,7 +53,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 			                                                          G_PARAM_READWRITE));
 
 			/**
-			* ConfiPluggable:name:
+			* ZakConfiPluggable:name:
 			*
 			*/
 			g_object_interface_install_property (iface,
@@ -64,7 +64,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 			                                                          G_PARAM_READWRITE));
 
 			/**
-			* ConfiPluggable:description:
+			* ZakConfiPluggable:description:
 			*
 			*/
 			g_object_interface_install_property (iface,
@@ -75,7 +75,7 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 			                                                          G_PARAM_READWRITE));
 
 			/**
-			* ConfiPluggable:root:
+			* ZakConfiPluggable:root:
 			*
 			*/
 			g_object_interface_install_property (iface,
@@ -90,8 +90,8 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
 }
 
 /**
- * confi_pluggable_initialize:
- * @pluggable: A #ConfiPluggable.
+ * zak_confi_pluggable_initialize:
+ * @pluggable: A #ZakConfiPluggable.
  * @cnc_string: The connection string.
  *
  * Initialize the backend.
@@ -99,194 +99,194 @@ confi_pluggable_default_init (ConfiPluggableInterface *iface)
  * Returns: #TRUE if success.
  */
 gboolean
-confi_pluggable_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
+zak_confi_pluggable_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->initialize != NULL, FALSE);
 
 	return iface->initialize (pluggable, cnc_string);
 }
 
 /**
- * confi_pluggable_get_configs_list:
- * @pluggable: A #ConfiPluggable.
+ * zak_confi_pluggable_get_configs_list:
+ * @pluggable: A #ZakConfiPluggable.
  * @filter: (nullable):
  *
- * Returns: (element-type ConfiConfi) (transfer container): a #GList of #ConfiConfi. If there's no configurations, returns a valid
+ * Returns: (element-type ZakConfi) (transfer container): a #GList of #ZakConfi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
 */
 GList
-*confi_pluggable_get_configs_list (ConfiPluggable *pluggable, const gchar *filter)
+*zak_confi_pluggable_get_configs_list (ZakConfiPluggable *pluggable, const gchar *filter)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->get_configs_list != NULL, FALSE);
 
 	return iface->get_configs_list (pluggable, filter);
 }
 
 /**
- * confi_pluggable_path_get_value:
- * @pluggable: A #ConfiPluggable.
+ * zak_confi_pluggable_path_get_value:
+ * @pluggable: A #ZakConfiPluggable.
  * @path:
  *
  * Returns: the value of the @path.
 */
 gchar
-*confi_pluggable_path_get_value (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_pluggable_path_get_value (ZakConfiPluggable *pluggable, const gchar *path)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->path_get_value != NULL, FALSE);
 
 	return iface->path_get_value (pluggable, path);
 }
 
 /**
- * confi_pluggable_path_set_value:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_pluggable_path_set_value:
+ * @pluggable: a #ZakConfiPluggable object.
  * @path: the key's path.
  * @value: the value to set.
  *
  */
 gboolean
-confi_pluggable_path_set_value (ConfiPluggable *pluggable, const gchar *path, const gchar *value)
+zak_confi_pluggable_path_set_value (ZakConfiPluggable *pluggable, const gchar *path, const gchar *value)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->path_set_value != NULL, FALSE);
 
 	return iface->path_set_value (pluggable, path, value);
 }
 
 /**
- * confi_pluggable_get_tree:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_pluggable_get_tree:
+ * @pluggable: a #ZakConfiPluggable object.
  *
  * Returns: a #GNode with the entire tree of configurations.
  */
 GNode
-*confi_pluggable_get_tree (ConfiPluggable *pluggable)
+*zak_confi_pluggable_get_tree (ZakConfiPluggable *pluggable)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->get_tree != NULL, FALSE);
 
 	return iface->get_tree (pluggable);
 }
 
 /**
- * confi_pluggable_add_key:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_pluggable_add_key:
+ * @pluggable: a #ZakConfiPluggable object.
  * @parent: the path where add the key.
  * @key: the key's name.
  * @value: the key's value.
  *
- * Returns: a #ConfigKey struct filled with data from the key just added.
+ * Returns: a #ZakConfigKey struct filled with data from the key just added.
  */
-ConfiKey
-*confi_pluggable_add_key (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
+ZakConfiKey
+*zak_confi_pluggable_add_key (ZakConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->add_key != NULL, FALSE);
 
 	return iface->add_key (pluggable, parent, key, value);
 }
 
 /**
- * confi_pluggable_key_set_key:
- * @pluggable: a #ConfiPluggable object.
- * @ck: a #ConfiKey struct.
+ * zak_confi_pluggable_key_set_key:
+ * @pluggable: a #ZakConfiPluggable object.
+ * @ck: a #ZakConfiKey struct.
  *
  */
 gboolean
-confi_pluggable_key_set_key (ConfiPluggable *pluggable,
-                   ConfiKey *ck)
+zak_confi_pluggable_key_set_key (ZakConfiPluggable *pluggable,
+                   ZakConfiKey *ck)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->key_set_key != NULL, FALSE);
 
 	return iface->key_set_key (pluggable, ck);
 }
 
 /**
- * confi_pluggable_path_get_confi_key:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_pluggable_path_get_confi_key:
+ * @pluggable: a #ZakConfiPluggable object.
  * @path: the key's path to get.
  *
- * Returns: (transfer full): a #ConfiKey from @path
+ * Returns: (transfer full): a #ZakConfiKey from @path
  */
-ConfiKey
-*confi_pluggable_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
+ZakConfiKey
+*zak_confi_pluggable_path_get_confi_key (ZakConfiPluggable *pluggable, const gchar *path)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->path_get_confi_key != NULL, FALSE);
 
 	return iface->path_get_confi_key (pluggable, path);
 }
 
 /**
- * confi_pluggable_remove_path:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_pluggable_remove_path:
+ * @pluggable: a #ZakConfiPluggable object.
  * @path: the path to remove.
  *
  * Removes @path and every child key.
  */
 gboolean
-confi_pluggable_remove_path (ConfiPluggable *pluggable, const gchar *path)
+zak_confi_pluggable_remove_path (ZakConfiPluggable *pluggable, const gchar *path)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->remove_path != NULL, FALSE);
 
 	return iface->remove_path (pluggable, path);
 }
 
 /**
- * confi_pluggable_remove:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_pluggable_remove:
+ * @pluggable: a #ZakConfiPluggable object.
  *
  * Remove a configuration from databases and destroy the relative object.
  */
 gboolean
-confi_pluggable_remove (ConfiPluggable *pluggable)
+zak_confi_pluggable_remove (ZakConfiPluggable *pluggable)
 {
-	ConfiPluggableInterface *iface;
+	ZakConfiPluggableInterface *iface;
 
-	g_return_val_if_fail (CONFI_IS_PLUGGABLE (pluggable), FALSE);
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
 
-	iface = CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
 	g_return_val_if_fail (iface->remove != NULL, FALSE);
 
 	return iface->remove (pluggable);

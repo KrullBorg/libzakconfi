@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([libconfi], [0.10.0], [azagli@libero.it])
-AC_CONFIG_SRCDIR([src/libconfi.c])
+AC_INIT([libzakconfi], [0.10.0], [azagli@libero.it])
+AC_CONFIG_SRCDIR([src/confi.c])
 AC_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE(-Wall)
@@ -55,7 +55,7 @@ esac
 AM_CONDITIONAL(PLATFORM_WIN32, [test $platform_win32 = yes])
 
 AC_CONFIG_FILES([
-  libconfi.pc
+  libzakconfi.pc
   Makefile
   src/Makefile
   plugins/Makefile

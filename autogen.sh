@@ -4,13 +4,13 @@
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
-PKG_NAME="libconfi"
+PKG_NAME="libzakconfi"
 
 (test -f $srcdir/configure.ac \
   && test -d $srcdir/src \
-  && test -f $srcdir/src/libconfi.h) || {
+  && test -f $srcdir/src/libzakconfi.h) || {
     echo -n "**Error**: Directory "\`$srcdir\'" does not look like the"
-    echo " top-level libconfi directory"
+    echo " top-level libzakconfi directory"
     exit 1
 }
 

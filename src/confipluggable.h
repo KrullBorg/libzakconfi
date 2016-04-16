@@ -2,7 +2,7 @@
  * confipluggable.h
  * This file is part of libconfi
  *
- * Copyright (C) 2014 - Andrea Zagli <azagli@libero.it>
+ * Copyright (C) 2014-2016 - Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Library General Public License as published by
@@ -19,8 +19,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef __CONFI_PLUGGABLE_H__
-#define __CONFI_PLUGGABLE_H__
+#ifndef __ZAK_CONFI_PLUGGABLE_H__
+#define __ZAK_CONFI_PLUGGABLE_H__
 
 #include <glib-object.h>
 
@@ -31,78 +31,78 @@ G_BEGIN_DECLS
 /*
  * Type checking and casting macros
  */
-#define CONFI_TYPE_PLUGGABLE             (confi_pluggable_get_type ())
-#define CONFI_PLUGGABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CONFI_TYPE_PLUGGABLE, ConfiPluggable))
-#define CONFI_PLUGGABLE_IFACE(obj)       (G_TYPE_CHECK_CLASS_CAST ((obj), CONFI_TYPE_PLUGGABLE, ConfiPluggableInterface))
-#define CONFI_IS_PLUGGABLE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CONFI_TYPE_PLUGGABLE))
-#define CONFI_PLUGGABLE_GET_IFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), CONFI_TYPE_PLUGGABLE, ConfiPluggableInterface))
+#define ZAK_CONFI_TYPE_PLUGGABLE             (zak_confi_pluggable_get_type ())
+#define ZAK_CONFI_PLUGGABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CONFI_TYPE_PLUGGABLE, ZakConfiPluggable))
+#define ZAK_CONFI_PLUGGABLE_IFACE(obj)       (G_TYPE_CHECK_CLASS_CAST ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggableInterface))
+#define ZAK_CONFI_IS_PLUGGABLE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), ZAK_CONFI_TYPE_PLUGGABLE))
+#define ZAK_CONFI_PLUGGABLE_GET_IFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggableInterface))
 
 /**
- * ConfiPluggable:
+ * ZakConfiPluggable:
  *
  * Interface for pluggable plugins.
  */
-typedef struct _ConfiPluggable           ConfiPluggable; /* dummy typedef */
-typedef struct _ConfiPluggableInterface  ConfiPluggableInterface;
+typedef struct _ZakConfiPluggable           ZakConfiPluggable; /* dummy typedef */
+typedef struct _ZakConfiPluggableInterface  ZakConfiPluggableInterface;
 
 /**
- * ConfiPluggableInterface:
+ * ZakConfiPluggableInterface:
  * @g_iface: The parent interface.
  * @initialize: Construct the plugin.
  *
  * Provides an interface for pluggable plugins.
  */
-struct _ConfiPluggableInterface {
+struct _ZakConfiPluggableInterface {
 	GTypeInterface g_iface;
 
 	/* Virtual public methods */
-	gboolean (*initialize) (ConfiPluggable *pluggable, const gchar *cnc_string);
-	GList *(*get_configs_list) (ConfiPluggable *pluggable,
+	gboolean (*initialize) (ZakConfiPluggable *pluggable, const gchar *cnc_string);
+	GList *(*get_configs_list) (ZakConfiPluggable *pluggable,
 	                            const gchar *filter);
-	gchar *(*path_get_value) (ConfiPluggable *pluggable, const gchar *path);
-	gboolean (*path_set_value) (ConfiPluggable *pluggable,
+	gchar *(*path_get_value) (ZakConfiPluggable *pluggable, const gchar *path);
+	gboolean (*path_set_value) (ZakConfiPluggable *pluggable,
 	                            const gchar *path,
 	                            const gchar *value);
-	GNode *(*get_tree) (ConfiPluggable *pluggable);
-	ConfiKey *(*add_key) (ConfiPluggable *pluggable,
+	GNode *(*get_tree) (ZakConfiPluggable *pluggable);
+	ZakConfiKey *(*add_key) (ZakConfiPluggable *pluggable,
 	                      const gchar *parent,
 	                      const gchar *key,
 	                      const gchar *value);
-	ConfiKey *(*path_get_confi_key) (ConfiPluggable *pluggable, const gchar *path);
-	gboolean (*remove_path) (ConfiPluggable *pluggable,
+	ZakConfiKey *(*path_get_confi_key) (ZakConfiPluggable *pluggable, const gchar *path);
+	gboolean (*remove_path) (ZakConfiPluggable *pluggable,
 	                         const gchar *path);
-	gboolean (*remove) (ConfiPluggable *pluggable);
-	gboolean (*key_set_key) (ConfiPluggable *pluggable,
-	                         ConfiKey *ck);
+	gboolean (*remove) (ZakConfiPluggable *pluggable);
+	gboolean (*key_set_key) (ZakConfiPluggable *pluggable,
+	                         ZakConfiKey *ck);
 };
 
 /*
  * Public methods
  */
-GType confi_pluggable_get_type (void) G_GNUC_CONST;
+GType zak_confi_pluggable_get_type (void) G_GNUC_CONST;
 
-gboolean confi_pluggable_initialize (ConfiPluggable *pluggable,
+gboolean zak_confi_pluggable_initialize (ZakConfiPluggable *pluggable,
                                      const gchar *cnc_string);
 
-GList *confi_pluggable_get_configs_list (ConfiPluggable *pluggable,
+GList *zak_confi_pluggable_get_configs_list (ZakConfiPluggable *pluggable,
                                          const gchar *filter);
-gchar *confi_pluggable_path_get_value (ConfiPluggable *pluggable,
+gchar *zak_confi_pluggable_path_get_value (ZakConfiPluggable *pluggable,
                                        const gchar *path);
-gboolean confi_pluggable_path_set_value (ConfiPluggable *pluggable,
+gboolean zak_confi_pluggable_path_set_value (ZakConfiPluggable *pluggable,
                                const gchar *path,
                                const gchar *value);
-GNode *confi_pluggable_get_tree (ConfiPluggable *pluggable);
-ConfiKey *confi_pluggable_add_key (ConfiPluggable *pluggable,
+GNode *zak_confi_pluggable_get_tree (ZakConfiPluggable *pluggable);
+ZakConfiKey *zak_confi_pluggable_add_key (ZakConfiPluggable *pluggable,
                                    const gchar *parent,
                                    const gchar *key,
                                    const gchar *value);
-gboolean confi_pluggable_key_set_key (ConfiPluggable *pluggable,
-                   ConfiKey *ck);
-ConfiKey *confi_pluggable_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path);
-gboolean confi_pluggable_remove_path (ConfiPluggable *pluggable, const gchar *path);
-gboolean confi_pluggable_remove (ConfiPluggable *pluggable);
+gboolean zak_confi_pluggable_key_set_key (ZakConfiPluggable *pluggable,
+                   ZakConfiKey *ck);
+ZakConfiKey *zak_confi_pluggable_path_get_confi_key (ZakConfiPluggable *pluggable, const gchar *path);
+gboolean zak_confi_pluggable_remove_path (ZakConfiPluggable *pluggable, const gchar *path);
+gboolean zak_confi_pluggable_remove (ZakConfiPluggable *pluggable);
 
 
 G_END_DECLS
 
-#endif /* __CONFI_PLUGGABLE_H__ */
+#endif /* __ZAK_CONFI_PLUGGABLE_H__ */

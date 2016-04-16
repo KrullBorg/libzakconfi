@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2014 Andrea Zagli <azagli@libero.it>
+ *  Copyright (C) 2005-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #include <libgdaex/libgdaex.h>
 
-#include "libconfi.h"
+#include "libzakconfi.h"
 
 
 enum
@@ -36,24 +36,24 @@ enum
 	PROP_ROOT
 };
 
-static void confi_class_init (ConfiClass *klass);
-static void confi_init (Confi *confi);
+static void zak_confi_class_init (ZakConfiClass *klass);
+static void zak_confi_init (ZakConfi *confi);
 
-static void confi_set_property (GObject *object,
+static void zak_confi_set_property (GObject *object,
                                 guint property_id,
                                 const GValue *value,
                                 GParamSpec *pspec);
-static void confi_get_property (GObject *object,
+static void zak_confi_get_property (GObject *object,
                                 guint property_id,
                                 GValue *value,
                                 GParamSpec *pspec);
 
-static ConfiPluggable *confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string);
+static ZakConfiPluggable *zak_confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string);
 
-#define CONFI_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TYPE_CONFI, ConfiPrivate))
+#define ZAK_CONFI_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), ZAK_TYPE_CONFI, ZakConfiPrivate))
 
-typedef struct _ConfiPrivate ConfiPrivate;
-struct _ConfiPrivate
+typedef struct _ZakConfiPrivate ZakConfiPrivate;
+struct _ZakConfiPrivate
 	{
 		GdaEx *gdaex;
 		gint id_config;
@@ -64,34 +64,34 @@ struct _ConfiPrivate
 
 		gchar chrquot;
 
-		ConfiPluggable *pluggable;
+		ZakConfiPluggable *pluggable;
 	};
 
-G_DEFINE_TYPE (Confi, confi, G_TYPE_OBJECT)
+G_DEFINE_TYPE (ZakConfi, zak_confi, G_TYPE_OBJECT)
 
 static void
-confi_class_init (ConfiClass *klass)
+zak_confi_class_init (ZakConfiClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-	g_type_class_add_private (object_class, sizeof (ConfiPrivate));
+	g_type_class_add_private (object_class, sizeof (ZakConfiPrivate));
 
-	object_class->set_property = confi_set_property;
-	object_class->get_property = confi_get_property;
+	object_class->set_property = zak_confi_set_property;
+	object_class->get_property = zak_confi_get_property;
 }
 
 static void
-confi_init (Confi *confi)
+zak_confi_init (ZakConfi *confi)
 {
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	priv->pluggable = NULL;
 }
 
-static ConfiPluggable
-*confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string)
+static ZakConfiPluggable
+*zak_confi_get_confi_pluggable_from_cnc_string (const gchar *cnc_string)
 {
-	ConfiPluggable *pluggable;
+	ZakConfiPluggable *pluggable;
 
 	const GList *lst_plugins;
 
@@ -121,10 +121,10 @@ static ConfiPluggable
 					if (peas_engine_load_plugin (peas_engine, ppinfo))
 						{
 							PeasExtension *ext;
-							ext = peas_engine_create_extension (peas_engine, ppinfo, CONFI_TYPE_PLUGGABLE,
+							ext = peas_engine_create_extension (peas_engine, ppinfo, ZAK_CONFI_TYPE_PLUGGABLE,
 							                                    "cnc_string", cnc_string + strlen (uri),
 							                                    NULL);
-							pluggable = (ConfiPluggable *)ext;
+							pluggable = (ZakConfiPluggable *)ext;
 							break;
 						}
 				}
@@ -142,27 +142,27 @@ static ConfiPluggable
 }
 
 /**
- * confi_new:
+ * zak_confi_new:
  * @cnc_string: the connection string.
  *
- * Returns: (transfer none): the newly created #Confi object, or NULL if it fails.
+ * Returns: (transfer none): the newly created #ZakConfi object, or NULL if it fails.
  */
-Confi
-*confi_new (const gchar *cnc_string)
+ZakConfi
+*zak_confi_new (const gchar *cnc_string)
 {
-	Confi *confi;
-	ConfiPrivate *priv;
-	ConfiPluggable *pluggable;
+	ZakConfi *confi;
+	ZakConfiPrivate *priv;
+	ZakConfiPluggable *pluggable;
 
 	g_return_val_if_fail (cnc_string != NULL, NULL);
 
 	confi = NULL;
 
-	pluggable = confi_get_confi_pluggable_from_cnc_string (cnc_string);
+	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
 	if (pluggable != NULL)
 		{
-			confi = CONFI (g_object_new (confi_get_type (), NULL));
-			priv = CONFI_GET_PRIVATE (confi);
+			confi = ZAK_CONFI (g_object_new (zak_confi_get_type (), NULL));
+			priv = ZAK_CONFI_GET_PRIVATE (confi);
 			priv->pluggable = pluggable;
 		}
 
@@ -170,11 +170,11 @@ Confi
 }
 
 PeasPluginInfo
-*confi_get_plugin_info (Confi *confi)
+*zak_confi_get_plugin_info (ZakConfi *confi)
 {
 	PeasPluginInfo *ppinfo;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -190,47 +190,47 @@ PeasPluginInfo
 }
 
 /**
- * confi_get_configs_list:
+ * zak_confi_get_configs_list:
  * @cnc_string: the connection string to use to connect to database that
  * contains configuration.
  * @filter: (nullable):
  *
- * Returns: (element-type Confi) (transfer container):  a #GList of #ConfiConfi. If there's no configurations, returns a valid
+ * Returns: (element-type ZakConfi) (transfer container):  a #GList of #ZakConfiZakConfi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
  */
 GList
-*confi_get_configs_list (const gchar *cnc_string,
+*zak_confi_get_configs_list (const gchar *cnc_string,
                          const gchar *filter)
 {
-	ConfiPluggable *pluggable;
+	ZakConfiPluggable *pluggable;
 	GList *lst;
 
 	lst = NULL;
 
-	pluggable = confi_get_confi_pluggable_from_cnc_string (cnc_string);
+	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
 
 	if (pluggable != NULL)
 		{
-			lst = confi_pluggable_get_configs_list (pluggable, filter);
+			lst = zak_confi_pluggable_get_configs_list (pluggable, filter);
 		}
 
 	return lst;
 }
 
 /**
- * confi_get_tree:
- * @confi: a #Confi object.
+ * zak_confi_get_tree:
+ * @confi: a #ZakConfi object.
  *
  * Returns: a #GNode.
  */
 GNode
-*confi_get_tree (Confi *confi)
+*zak_confi_get_tree (ZakConfi *confi)
 {
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable != NULL)
 		{
-			return confi_pluggable_get_tree (priv->pluggable);
+			return zak_confi_pluggable_get_tree (priv->pluggable);
 		}
 	else
 		{
@@ -239,14 +239,14 @@ GNode
 }
 
 /**
- * confi_normalize_set_root:
- * @confi: a #Confi object.
+ * zak_confi_normalize_set_root:
+ * @confi: a #ZakConfi object.
  * @root: the root.
  *
  * Returns: a correct value for root property.
  */
 gchar
-*confi_normalize_root (const gchar *root)
+*zak_confi_normalize_root (const gchar *root)
 {
 	GString *root_;
 	gchar *strret;
@@ -283,17 +283,17 @@ gchar
 }
 
 /**
- * confi_set_root:
- * @confi: a #Confi object.
+ * zak_confi_set_root:
+ * @confi: a #ZakConfi object.
  * @root: the root.
  *
  */
 gboolean
-confi_set_root (Confi *confi, const gchar *root)
+zak_confi_set_root (ZakConfi *confi, const gchar *root)
 {
 	gboolean ret;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -310,20 +310,20 @@ confi_set_root (Confi *confi, const gchar *root)
 }
 
 /**
- * confi_add_key:
- * @confi: a #Confi object.
+ * zak_confi_add_key:
+ * @confi: a #ZakConfi object.
  * @parent: the path where add the key.
  * @key: the key's name.
  * @value: the key's value.
  *
- * Returns: a #ConfigKey struct filled with data from the key just added.
+ * Returns: a #ZakConfigKey struct filled with data from the key just added.
  */
-ConfiKey
-*confi_add_key (Confi *confi, const gchar *parent, const gchar *key, const gchar *value)
+ZakConfiKey
+*zak_confi_add_key (ZakConfi *confi, const gchar *parent, const gchar *key, const gchar *value)
 {
-	ConfiKey *ck;
+	ZakConfiKey *ck;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -332,25 +332,25 @@ ConfiKey
 		}
 	else
 		{
-			ck = confi_pluggable_add_key (priv->pluggable, parent, key, value);
+			ck = zak_confi_pluggable_add_key (priv->pluggable, parent, key, value);
 		}
 
 	return ck;
 }
 
 /**
- * confi_key_set_key:
- * @confi: a #Confi object.
- * @ck: a #ConfiKey struct.
+ * zak_confi_key_set_key:
+ * @confi: a #ZakConfi object.
+ * @ck: a #ZakConfiKey struct.
  *
  */
 gboolean
-confi_key_set_key (Confi *confi,
-                   ConfiKey *ck)
+zak_confi_key_set_key (ZakConfi *confi,
+                   ZakConfiKey *ck)
 {
 	gboolean ret;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -359,24 +359,24 @@ confi_key_set_key (Confi *confi,
 		}
 	else
 		{
-			ret = confi_pluggable_key_set_key (priv->pluggable, ck);
+			ret = zak_confi_pluggable_key_set_key (priv->pluggable, ck);
 		}
 
 	return ret;
 }
 
 /**
- * confi_remove_path:
- * @confi: a #Confi object.
+ * zak_confi_remove_path:
+ * @confi: a #ZakConfi object.
  * @path: the path to remove.
  *
  * Removes @path and every child key.
  */
 gboolean
-confi_remove_path (Confi *confi, const gchar *path)
+zak_confi_remove_path (ZakConfi *confi, const gchar *path)
 {
 	gboolean ret;
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -385,25 +385,25 @@ confi_remove_path (Confi *confi, const gchar *path)
 		}
 	else
 		{
-			ret = confi_pluggable_remove_path (priv->pluggable, path);
+			ret = zak_confi_pluggable_remove_path (priv->pluggable, path);
 		}
 
 	return ret;
 }
 
 /**
- * confi_path_get_value:
- * @confi: a #Confi object.
+ * zak_confi_path_get_value:
+ * @confi: a #ZakConfi object.
  * @path: the path from which retrieving the value.
  *
  * Returns: the configuration's value as a string.
  */
 gchar
-*confi_path_get_value (Confi *confi, const gchar *path)
+*zak_confi_path_get_value (ZakConfi *confi, const gchar *path)
 {
 	gchar *ret;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -412,25 +412,25 @@ gchar
 		}
 	else
 		{
-			ret = confi_pluggable_path_get_value (priv->pluggable, path);
+			ret = zak_confi_pluggable_path_get_value (priv->pluggable, path);
 		}
 
 	return ret;
 }
 
 /**
- * confi_path_set_value:
- * @confi: a #Confi object.
+ * zak_confi_path_set_value:
+ * @confi: a #ZakConfi object.
  * @path: the key's path.
  * @value: the value to set.
  *
  */
 gboolean
-confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
+zak_confi_path_set_value (ZakConfi *confi, const gchar *path, const gchar *value)
 {
 	gboolean ret;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -439,25 +439,25 @@ confi_path_set_value (Confi *confi, const gchar *path, const gchar *value)
 		}
 	else
 		{
-			ret = confi_pluggable_path_set_value (priv->pluggable, path, value);
+			ret = zak_confi_pluggable_path_set_value (priv->pluggable, path, value);
 		}
 
 	return ret;
 }
 
 /**
- * confi_path_get_confi_key:
- * @confi: a #Confi object.
+ * zak_confi_path_get_confi_key:
+ * @confi: a #ZakConfi object.
  * @path: the key's path to get.
  *
- * Returns: (transfer full): a #ConfiKey from @path
+ * Returns: (transfer full): a #ZakConfiKey from @path
  */
-ConfiKey
-*confi_path_get_confi_key (Confi *confi, const gchar *path)
+ZakConfiKey
+*zak_confi_path_get_confi_key (ZakConfi *confi, const gchar *path)
 {
-	ConfiKey *ck;
+	ZakConfiKey *ck;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -466,24 +466,24 @@ ConfiKey
 		}
 	else
 		{
-			ck = confi_pluggable_path_get_confi_key (priv->pluggable, path);
+			ck = zak_confi_pluggable_path_get_confi_key (priv->pluggable, path);
 		}
 
 	return ck;
 }
 
 /**
- * confi_remove:
- * @confi: a #Confi object.
+ * zak_confi_remove:
+ * @confi: a #ZakConfi object.
  *
  * Remove a configuration from databases and destroy the relative object.
  */
 gboolean
-confi_remove (Confi *confi)
+zak_confi_remove (ZakConfi *confi)
 {
 	gboolean ret;
 
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	if (priv->pluggable == NULL)
 		{
@@ -492,27 +492,27 @@ confi_remove (Confi *confi)
 		}
 	else
 		{
-			ret = confi_pluggable_remove (priv->pluggable);
+			ret = zak_confi_pluggable_remove (priv->pluggable);
 		}
 
 	if (ret)
 		{
-			confi_destroy (confi);
+			zak_confi_destroy (confi);
 		}
 
 	return ret;
 }
 
 /**
- * confi_destroy:
- * @confi: a #Confi object.
+ * zak_confi_destroy:
+ * @confi: a #ZakConfi object.
  *
- * Destroy the #Confi object, freeing memory.
+ * Destroy the #ZakConfi object, freeing memory.
  */
 void
-confi_destroy (Confi *confi)
+zak_confi_destroy (ZakConfi *confi)
 {
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	g_free (priv->name);
 	g_free (priv->description);
@@ -521,13 +521,13 @@ confi_destroy (Confi *confi)
 }
 
 /**
- * confi_path_normalize:
- * @pluggable: a #ConfiPluggable object.
+ * zak_confi_path_normalize:
+ * @pluggable: a #ZakConfiPluggable object.
  *
  * Returns: a normalize path (with root).
  */
 gchar
-*confi_path_normalize (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_path_normalize (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	GString *ret;
 	gchar *strret;
@@ -578,12 +578,12 @@ gchar
 
 /* PRIVATE */
 static void
-confi_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
+zak_confi_set_property (GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
 {
 	gchar *sql;
 
-	Confi *confi = CONFI (object);
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfi *confi = ZAK_CONFI (object);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	switch (property_id)
 		{
@@ -594,10 +594,10 @@ confi_set_property (GObject *object, guint property_id, const GValue *value, GPa
 }
 
 static void
-confi_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
+zak_confi_get_property (GObject *object, guint property_id, GValue *value, GParamSpec *pspec)
 {
-	Confi *confi = CONFI (object);
-	ConfiPrivate *priv = CONFI_GET_PRIVATE (confi);
+	ZakConfi *confi = ZAK_CONFI (object);
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
 
 	switch (property_id)
 		{

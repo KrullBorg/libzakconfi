@@ -1,8 +1,8 @@
 /*
  * plgdb.c
- * This file is part of confi
+ * This file is part of libzakconfi
  *
- * Copyright (C) 2014 Andrea Zagli
+ * Copyright (C) 2014-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU Library General Public License as published by
@@ -33,21 +33,21 @@
 
 #include <libgdaex/libgdaex.h>
 
-#include "../../src/libconfi.h"
+#include "../../src/libzakconfi.h"
 #include "../../src/confipluggable.h"
 
 #include "plgdb.h"
 
-static void confi_pluggable_iface_init (ConfiPluggableInterface *iface);
+static void zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface);
 
-static GdaDataModel *confi_db_plugin_path_get_data_model (ConfiPluggable *pluggable, const gchar *path);
-static gchar *confi_db_plugin_path_get_value_from_db (ConfiPluggable *pluggable, const gchar *path);
-static void confi_db_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode, gint idParent, gchar *path);
+static GdaDataModel *zak_confi_db_plugin_path_get_data_model (ZakConfiPluggable *pluggable, const gchar *path);
+static gchar *zak_confi_db_plugin_path_get_value_from_db (ZakConfiPluggable *pluggable, const gchar *path);
+static void zak_confi_db_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode, gint idParent, gchar *path);
 
-#define CONFI_DB_PLUGIN_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), CONFI_TYPE_DB_PLUGIN, ConfiDBPluginPrivate))
+#define ZAK_CONFI_DB_PLUGIN_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), ZAK_CONFI_TYPE_DB_PLUGIN, ZakConfiDBPluginPrivate))
 
-typedef struct _ConfiDBPluginPrivate ConfiDBPluginPrivate;
-struct _ConfiDBPluginPrivate
+typedef struct _ZakConfiDBPluginPrivate ZakConfiDBPluginPrivate;
+struct _ZakConfiDBPluginPrivate
 	{
 		gchar *cnc_string;
 
@@ -61,12 +61,12 @@ struct _ConfiDBPluginPrivate
 		gchar chrquot;
 	};
 
-G_DEFINE_DYNAMIC_TYPE_EXTENDED (ConfiDBPlugin,
-                                confi_db_plugin,
+G_DEFINE_DYNAMIC_TYPE_EXTENDED (ZakConfiDBPlugin,
+                                zak_confi_db_plugin,
                                 PEAS_TYPE_EXTENSION_BASE,
                                 0,
-                                G_IMPLEMENT_INTERFACE_DYNAMIC (CONFI_TYPE_PLUGGABLE,
-                                                               confi_pluggable_iface_init))
+                                G_IMPLEMENT_INTERFACE_DYNAMIC (ZAK_CONFI_TYPE_PLUGGABLE,
+                                                               zak_confi_pluggable_iface_init))
 
 enum {
 	PROP_0,
@@ -77,20 +77,20 @@ enum {
 };
 
 static void
-confi_db_plugin_set_property (GObject      *object,
+zak_confi_db_plugin_set_property (GObject      *object,
                               guint         prop_id,
                               const GValue *value,
                               GParamSpec   *pspec)
 {
 	gchar *sql;
 
-	ConfiDBPlugin *plugin = CONFI_DB_PLUGIN (object);
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiDBPlugin *plugin = ZAK_CONFI_DB_PLUGIN (object);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
 
 	switch (prop_id)
 		{
 			case PROP_CNC_STRING:
-				confi_db_plugin_initialize ((ConfiPluggable *)plugin, g_value_get_string (value));
+				zak_confi_db_plugin_initialize ((ZakConfiPluggable *)plugin, g_value_get_string (value));
 				break;
 
 			case PROP_NAME:
@@ -116,7 +116,7 @@ confi_db_plugin_set_property (GObject      *object,
 				break;
 
 			case PROP_ROOT:
-				priv->root = confi_normalize_root (g_value_get_string (value));
+				priv->root = zak_confi_normalize_root (g_value_get_string (value));
 				break;
 
 			default:
@@ -126,13 +126,13 @@ confi_db_plugin_set_property (GObject      *object,
 }
 
 static void
-confi_db_plugin_get_property (GObject    *object,
+zak_confi_db_plugin_get_property (GObject    *object,
                               guint       prop_id,
                               GValue     *value,
                               GParamSpec *pspec)
 {
-	ConfiDBPlugin *plugin = CONFI_DB_PLUGIN (object);
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiDBPlugin *plugin = ZAK_CONFI_DB_PLUGIN (object);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
 
 	switch (prop_id)
 		{
@@ -159,9 +159,9 @@ confi_db_plugin_get_property (GObject    *object,
 }
 
 static void
-confi_db_plugin_init (ConfiDBPlugin *plugin)
+zak_confi_db_plugin_init (ZakConfiDBPlugin *plugin)
 {
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
 
 	priv->cnc_string = NULL;
 	priv->gdaex = NULL;
@@ -170,18 +170,18 @@ confi_db_plugin_init (ConfiDBPlugin *plugin)
 }
 
 static void
-confi_db_plugin_finalize (GObject *object)
+zak_confi_db_plugin_finalize (GObject *object)
 {
-	ConfiDBPlugin *plugin = CONFI_DB_PLUGIN (object);
+	ZakConfiDBPlugin *plugin = ZAK_CONFI_DB_PLUGIN (object);
 
-	G_OBJECT_CLASS (confi_db_plugin_parent_class)->finalize (object);
+	G_OBJECT_CLASS (zak_confi_db_plugin_parent_class)->finalize (object);
 }
 
 gboolean
-confi_db_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
+zak_confi_db_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string)
 {
-	ConfiDBPlugin *plugin = CONFI_DB_PLUGIN (pluggable);
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
+	ZakConfiDBPlugin *plugin = ZAK_CONFI_DB_PLUGIN (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (plugin);
 
 	GString *gstr_cnc_string;
 	gchar **strs;
@@ -253,7 +253,7 @@ confi_db_plugin_initialize (ConfiPluggable *pluggable, const gchar *cnc_string)
 }
 
 static GdaDataModel
-*confi_db_plugin_path_get_data_model (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_db_plugin_path_get_data_model (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gchar **tokens;
 	gchar *sql;
@@ -262,7 +262,7 @@ static GdaDataModel
 	guint id_parent;
 	GdaDataModel *dm;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	if (path == NULL) return NULL;
 
@@ -311,14 +311,14 @@ static GdaDataModel
 }
 
 static gchar
-*confi_db_plugin_path_get_value_from_db (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_db_plugin_path_get_value_from_db (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gchar *ret;
 	GdaDataModel *dm;
 
 	ret = NULL;
 
-	dm = confi_db_plugin_path_get_data_model (pluggable, path);
+	dm = zak_confi_db_plugin_path_get_data_model (pluggable, path);
 	if (dm != NULL)
 		{
 			ret = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
@@ -329,12 +329,12 @@ static gchar
 }
 
 static void
-confi_db_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode, gint idParent, gchar *path)
+zak_confi_db_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode, gint idParent, gchar *path)
 {
 	gchar *sql;
 	GdaDataModel *dm;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	sql = g_strdup_printf ("SELECT *"
 	                       " FROM %cvalues%c"
@@ -355,7 +355,7 @@ confi_db_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode, gint
 			for (i = 0; i < rows; i++)
 				{
 					GNode *newNode;
-					ConfiKey *ck = g_new0 (ConfiKey, 1);
+					ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
 					ck->id_config = priv->id_config;
 					ck->id = gdaex_data_model_get_field_value_integer_at (dm, i, "id");
@@ -367,19 +367,19 @@ confi_db_plugin_get_children (ConfiPluggable *pluggable, GNode *parentNode, gint
 
 					newNode = g_node_append_data (parentNode, ck);
 
-					confi_db_plugin_get_children (pluggable, newNode, ck->id, g_strconcat (path, (g_strcmp0 (path, "") == 0 ? "" : "/"), ck->key, NULL));
+					zak_confi_db_plugin_get_children (pluggable, newNode, ck->id, g_strconcat (path, (g_strcmp0 (path, "") == 0 ? "" : "/"), ck->key, NULL));
 				}
 			g_object_unref (dm);
 		}
 }
 
 static GList
-*confi_db_plugin_get_configs_list (ConfiPluggable *pluggable,
+*zak_confi_db_plugin_get_configs_list (ZakConfiPluggable *pluggable,
                                    const gchar *filter)
 {
 	GList *lst;
 
-	GdaDataModel *dmConfigs;
+	GdaDataModel *dmZakConfigs;
 
 	gchar *sql;
 	gchar *where;
@@ -388,7 +388,7 @@ static GList
 	guint id;
 	guint rows;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	lst = NULL;
 
@@ -409,19 +409,19 @@ static GList
 	sql = g_strdup_printf ("SELECT * FROM configs%s", where);
 	g_free (where);
 
-	dmConfigs = gdaex_query (priv->gdaex, sql);
+	dmZakConfigs = gdaex_query (priv->gdaex, sql);
 	g_free (sql);
-	if (dmConfigs != NULL)
+	if (dmZakConfigs != NULL)
 		{
-			rows = gda_data_model_get_n_rows (dmConfigs);
+			rows = gda_data_model_get_n_rows (dmZakConfigs);
 			if (rows > 0)
 				{
 					for (row = 0; row < rows; row++)
 						{
-							ConfiConfi *confi;
-							confi = g_new0 (ConfiConfi, 1);
-							confi->name = gdaex_data_model_get_field_value_stringify_at (dmConfigs, row, "name");
-							confi->description = gdaex_data_model_get_field_value_stringify_at (dmConfigs, row, "description");
+							ZakConfiConfi *confi;
+							confi = g_new0 (ZakConfiConfi, 1);
+							confi->name = gdaex_data_model_get_field_value_stringify_at (dmZakConfigs, row, "name");
+							confi->description = gdaex_data_model_get_field_value_stringify_at (dmZakConfigs, row, "description");
 							lst = g_list_append (lst, confi);
 						}
 				}
@@ -435,36 +435,36 @@ static GList
 }
 
 static gchar
-*confi_db_plugin_path_get_value (ConfiPluggable *pluggable, const gchar *path)
+*zak_confi_db_plugin_path_get_value (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gchar *ret;
 	gchar *path_;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	ret = NULL;
 
-	path_ = confi_path_normalize (pluggable, path);
+	path_ = zak_confi_path_normalize (pluggable, path);
 	if (path_ == NULL)
 		{
 			return NULL;
 		}
 
-	ret = confi_db_plugin_path_get_value_from_db (pluggable, path_);
+	ret = zak_confi_db_plugin_path_get_value_from_db (pluggable, path_);
 
 	return ret;
 }
 
 static gboolean
-confi_db_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, const gchar *value)
+zak_confi_db_plugin_path_set_value (ZakConfiPluggable *pluggable, const gchar *path, const gchar *value)
 {
 	GdaDataModel *dm;
 	gchar *sql;
 	gboolean ret;
 
-	dm = confi_db_plugin_path_get_data_model (pluggable, confi_path_normalize (pluggable, path));
+	dm = zak_confi_db_plugin_path_get_data_model (pluggable, zak_confi_path_normalize (pluggable, path));
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	ret = FALSE;
 	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
@@ -493,16 +493,16 @@ confi_db_plugin_path_set_value (ConfiPluggable *pluggable, const gchar *path, co
 }
 
 GNode
-*confi_db_plugin_get_tree (ConfiPluggable *pluggable)
+*zak_confi_db_plugin_get_tree (ZakConfiPluggable *pluggable)
 {
 	gchar *path;
 	GNode *node;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	path = g_strdup ("");
 
-	ConfiKey *ck = g_new0 (ConfiKey, 1);
+	ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
 	ck->id_config = priv->id_config;
 	ck->id = 0;
@@ -514,22 +514,22 @@ GNode
 
 	node = g_node_new (ck);
 
-	confi_db_plugin_get_children (pluggable, node, 0, path);
+	zak_confi_db_plugin_get_children (pluggable, node, 0, path);
 
 	return node;
 }
 
-static ConfiKey
-*confi_db_plugin_add_key (ConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
+static ZakConfiKey
+*zak_confi_db_plugin_add_key (ZakConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
 {
-	ConfiKey *ck;
+	ZakConfiKey *ck;
 	GdaDataModel *dmParent;
 
 	gchar *sql;
 	gint id;
 	GdaDataModel *dm;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	gint id_parent;
 	gchar *parent_;
@@ -551,7 +551,7 @@ static ConfiKey
 				}
 			else
 				{
-					dmParent = confi_db_plugin_path_get_data_model (pluggable, confi_path_normalize (pluggable, parent_));
+					dmParent = zak_confi_db_plugin_path_get_data_model (pluggable, zak_confi_path_normalize (pluggable, parent_));
 					if (dmParent == NULL)
 						{
 							id_parent = -1;
@@ -642,7 +642,7 @@ static ConfiKey
 					g_free (sql);
 				}
 
-			ck = g_new0 (ConfiKey, 1);
+			ck = g_new0 (ZakConfiKey, 1);
 			ck->id_config = priv->id_config;
 			ck->id = id;
 			ck->id_parent = id_parent;
@@ -673,7 +673,7 @@ static ConfiKey
 					path = g_strdup (ck->key);
 				}
 
-			if (!confi_db_plugin_path_set_value (pluggable, path, value))
+			if (!zak_confi_db_plugin_path_set_value (pluggable, path, value))
 				{
 					ck = NULL;
 				}
@@ -688,13 +688,13 @@ static ConfiKey
 }
 
 static gboolean
-confi_db_plugin_key_set_key (ConfiPluggable *pluggable,
-                             ConfiKey *ck)
+zak_confi_db_plugin_key_set_key (ZakConfiPluggable *pluggable,
+                             ZakConfiKey *ck)
 {
 	gboolean ret;
 	gchar *sql;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	sql = g_strdup_printf ("UPDATE %cvalues%c"
 	                       " SET %ckey%c = '%s',"
@@ -716,22 +716,22 @@ confi_db_plugin_key_set_key (ConfiPluggable *pluggable,
 	return ret;
 }
 
-static ConfiKey
-*confi_db_plugin_path_get_confi_key (ConfiPluggable *pluggable, const gchar *path)
+static ZakConfiKey
+*zak_confi_db_plugin_path_get_confi_key (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	GdaDataModel *dm;
 	gchar *path_;
-	ConfiKey *ck;
+	ZakConfiKey *ck;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
-	path_ = confi_path_normalize (pluggable, path);
+	path_ = zak_confi_path_normalize (pluggable, path);
 	if (path_ == NULL)
 		{
 			return NULL;
 		}
 
-	dm = confi_db_plugin_path_get_data_model (pluggable, path_);
+	dm = zak_confi_db_plugin_path_get_data_model (pluggable, path_);
 	if (dm == NULL || gda_data_model_get_n_rows (dm) <= 0)
 		{
 			if (dm != NULL)
@@ -741,7 +741,7 @@ static ConfiKey
 			return NULL;
 		}
 
-	ck = g_new0 (ConfiKey, 1);
+	ck = g_new0 (ZakConfiKey, 1);
 	ck->id_config = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_configs");
 	ck->id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 	ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_parent");
@@ -759,12 +759,12 @@ static ConfiKey
 }
 
 static gboolean
-confi_db_plugin_delete_id_from_db_values (ConfiPluggable *pluggable, gint id)
+zak_confi_db_plugin_delete_id_from_db_values (ZakConfiPluggable *pluggable, gint id)
 {
 	gboolean ret;
 	gchar *sql;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	sql = g_strdup_printf ("DELETE FROM %cvalues%c"
 	                       " WHERE id_configs = %d"
@@ -787,26 +787,26 @@ confi_db_plugin_delete_id_from_db_values (ConfiPluggable *pluggable, gint id)
 }
 
 static gboolean
-confi_db_plugin_remove_path_traverse_func (GNode *node, gpointer data)
+zak_confi_db_plugin_remove_path_traverse_func (GNode *node, gpointer data)
 {
-	ConfiKey *ck = (ConfiKey *)node->data;
+	ZakConfiKey *ck = (ZakConfiKey *)node->data;
 	if (ck->id != 0)
 		{
-			confi_db_plugin_delete_id_from_db_values ((ConfiPluggable *)data, ck->id);
+			zak_confi_db_plugin_delete_id_from_db_values ((ZakConfiPluggable *)data, ck->id);
 		}
 
 	return FALSE;
 }
 
 static gboolean
-confi_db_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
+zak_confi_db_plugin_remove_path (ZakConfiPluggable *pluggable, const gchar *path)
 {
 	gboolean ret = FALSE;
 	GdaDataModel *dm;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
-	dm = confi_db_plugin_path_get_data_model (pluggable, confi_path_normalize (pluggable, path));
+	dm = zak_confi_db_plugin_path_get_data_model (pluggable, zak_confi_path_normalize (pluggable, path));
 
 	if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
 		{
@@ -817,17 +817,17 @@ confi_db_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
 			gint id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 
 			node = g_node_new (path_);
-			confi_db_plugin_get_children (pluggable, node, id, path_);
+			zak_confi_db_plugin_get_children (pluggable, node, id, path_);
 
 			root = g_node_get_root (node);
 
 			if (g_node_n_nodes (root, G_TRAVERSE_ALL) > 1)
 				{
-					g_node_traverse (root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
+					g_node_traverse (root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, zak_confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
 				}
 
 			/* removing the path */
-			ret = confi_db_plugin_delete_id_from_db_values (pluggable, id);
+			ret = zak_confi_db_plugin_delete_id_from_db_values (pluggable, id);
 		}
 	else
 		{
@@ -842,12 +842,12 @@ confi_db_plugin_remove_path (ConfiPluggable *pluggable, const gchar *path)
 }
 
 static gboolean
-confi_db_plugin_remove (ConfiPluggable *pluggable)
+zak_confi_db_plugin_remove (ZakConfiPluggable *pluggable)
 {
 	gboolean ret;
 	gchar *sql;
 
-	ConfiDBPluginPrivate *priv = CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
 
 	ret = TRUE;
 	sql = g_strdup_printf ("DELETE FROM %cvalues%c WHERE id_configs = %d",
@@ -875,15 +875,15 @@ confi_db_plugin_remove (ConfiPluggable *pluggable)
 }
 
 static void
-confi_db_plugin_class_init (ConfiDBPluginClass *klass)
+zak_confi_db_plugin_class_init (ZakConfiDBPluginClass *klass)
 {
 	GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-	g_type_class_add_private (object_class, sizeof (ConfiDBPluginPrivate));
+	g_type_class_add_private (object_class, sizeof (ZakConfiDBPluginPrivate));
 
-	object_class->set_property = confi_db_plugin_set_property;
-	object_class->get_property = confi_db_plugin_get_property;
-	object_class->finalize = confi_db_plugin_finalize;
+	object_class->set_property = zak_confi_db_plugin_set_property;
+	object_class->get_property = zak_confi_db_plugin_get_property;
+	object_class->finalize = zak_confi_db_plugin_finalize;
 
 	g_object_class_override_property (object_class, PROP_CNC_STRING, "cnc_string");
 	g_object_class_override_property (object_class, PROP_NAME, "name");
@@ -892,31 +892,31 @@ confi_db_plugin_class_init (ConfiDBPluginClass *klass)
 }
 
 static void
-confi_pluggable_iface_init (ConfiPluggableInterface *iface)
+zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 {
-	iface->initialize = confi_db_plugin_initialize;
-	iface->get_configs_list = confi_db_plugin_get_configs_list;
-	iface->path_get_value = confi_db_plugin_path_get_value;
-	iface->path_set_value = confi_db_plugin_path_set_value;
-	iface->get_tree = confi_db_plugin_get_tree;
-	iface->add_key = confi_db_plugin_add_key;
-	iface->key_set_key = confi_db_plugin_key_set_key;
-	iface->path_get_confi_key = confi_db_plugin_path_get_confi_key;
-	iface->remove_path = confi_db_plugin_remove_path;
-	iface->remove = confi_db_plugin_remove;
+	iface->initialize = zak_confi_db_plugin_initialize;
+	iface->get_configs_list = zak_confi_db_plugin_get_configs_list;
+	iface->path_get_value = zak_confi_db_plugin_path_get_value;
+	iface->path_set_value = zak_confi_db_plugin_path_set_value;
+	iface->get_tree = zak_confi_db_plugin_get_tree;
+	iface->add_key = zak_confi_db_plugin_add_key;
+	iface->key_set_key = zak_confi_db_plugin_key_set_key;
+	iface->path_get_confi_key = zak_confi_db_plugin_path_get_confi_key;
+	iface->remove_path = zak_confi_db_plugin_remove_path;
+	iface->remove = zak_confi_db_plugin_remove;
 }
 
 static void
-confi_db_plugin_class_finalize (ConfiDBPluginClass *klass)
+zak_confi_db_plugin_class_finalize (ZakConfiDBPluginClass *klass)
 {
 }
 
 G_MODULE_EXPORT void
 peas_register_types (PeasObjectModule *module)
 {
-	confi_db_plugin_register_type (G_TYPE_MODULE (module));
+	zak_confi_db_plugin_register_type (G_TYPE_MODULE (module));
 
 	peas_object_module_register_extension_type (module,
-	                                            CONFI_TYPE_PLUGGABLE,
-	                                            CONFI_TYPE_DB_PLUGIN);
+	                                            ZAK_CONFI_TYPE_PLUGGABLE,
+	                                            ZAK_CONFI_TYPE_DB_PLUGIN);
 }

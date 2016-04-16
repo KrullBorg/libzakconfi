@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2014 Andrea Zagli <azagli@libero.it>
+ * Copyright (C) 2005-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,14 +16,18 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <glib/gprintf.h>
 #include <libpeas/peas.h>
-#include <libconfi.h>
+
+#include <libgdaex/libgdaex.h>
+
+#include <libzakconfi.h>
 
 gboolean
 traverse_func (GNode *node,
                gpointer data)
 {
-	ConfiKey *ck = (ConfiKey *)node->data;
+	ZakConfiKey *ck = (ZakConfiKey *)node->data;
 	g_printf ("%s%s%s => %s\n", ck->path, g_strcmp0 (ck->path, "") == 0 ? "" : "/", ck->key, ck->value);
 
 	return FALSE;
@@ -33,7 +37,7 @@ int
 main (int argc, char **argv)
 {
 	PeasEngine *engine;
-	Confi *confi;
+	ZakConfi *confi;
 	PeasPluginInfo *ppinfo;
 	GList *confis;
 	GNode *tree;
@@ -49,10 +53,10 @@ main (int argc, char **argv)
 	engine = peas_engine_get_default ();
 	peas_engine_add_search_path (engine, "./plugins", NULL);
 
-	confis = confi_get_configs_list (argv[1], NULL);
+	confis = zak_confi_get_configs_list (argv[1], NULL);
 	while (confis)
 		{
-			ConfiConfi *confi = (ConfiConfi *)confis->data;
+			ZakConfiConfi *confi = (ZakConfiConfi *)confis->data;
 
 			if (confi == NULL) break;
 
@@ -62,14 +66,14 @@ main (int argc, char **argv)
 			confis = g_list_next (confis);
 		}
 
-	confi = confi_new (argv[1]);
+	confi = zak_confi_new (argv[1]);
 	if (confi == NULL)
 		{
 			g_error ("Error on configuration initialization.");
 			return 0;
 		}
 
-	ppinfo = confi_get_plugin_info (confi);
+	ppinfo = zak_confi_get_plugin_info (confi);
 	g_printf ("Plugin info\n");
 	g_printf ("Name: %s\n", peas_plugin_info_get_name (ppinfo));
 	g_printf ("Module dir: %s\n", peas_plugin_info_get_module_dir (ppinfo));
@@ -77,24 +81,24 @@ main (int argc, char **argv)
 	g_printf ("\n");
 
 	g_printf ("Traversing the entire tree\n");
-	tree = confi_get_tree (confi);
+	tree = zak_confi_get_tree (confi);
 	g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
 	g_printf ("\n");
 
 	if (g_strcmp0 (peas_plugin_info_get_module_name (ppinfo), "file") == 0)
 		{
-			gchar *val = confi_path_get_value (confi, "FOLDER1/key1");
+			gchar *val = zak_confi_path_get_value (confi, "FOLDER1/key1");
 			g_printf ("Value from key \"FOLDER1/key1\"\n%s\n\n", val);
-			confi_path_set_value (confi, "FOLDER1/key1", "new value programmatically setted");
-			g_printf ("Value from key \"FOLDER1/key1\"\n%s\n\n", confi_path_get_value (confi, "FOLDER1/key1"));
-			confi_path_set_value (confi, "FOLDER1/key1", val);
+			zak_confi_path_set_value (confi, "FOLDER1/key1", "new value programmatically setted");
+			g_printf ("Value from key \"FOLDER1/key1\"\n%s\n\n", zak_confi_path_get_value (confi, "FOLDER1/key1"));
+			zak_confi_path_set_value (confi, "FOLDER1/key1", val);
 
-			confi_add_key (confi, "FOLDER2", "key999", NULL);
-			confi_path_set_value (confi, "FOLDER2/key999", "value for key999, programmatically setted");
+			zak_confi_add_key (confi, "FOLDER2", "key999", NULL);
+			zak_confi_path_set_value (confi, "FOLDER2/key999", "value for key999, programmatically setted");
 
-			ConfiKey *ck;
-			ck = confi_path_get_confi_key (confi, "FOLDER1/key2");
-			g_printf ("ConfiKey for FOLDER1/key2\n");
+			ZakConfiKey *ck;
+			ck = zak_confi_path_get_confi_key (confi, "FOLDER1/key2");
+			g_printf ("ZakConfiKey for FOLDER1/key2\n");
 			g_printf ("Path: %s\n", ck->path);
 			g_printf ("Key: %s\n", ck->key);
 			g_printf ("Description: %s\n", ck->description);
@@ -102,24 +106,24 @@ main (int argc, char **argv)
 			g_printf ("\n");
 
 			g_printf ("Setting root \"FOLDER2\"\n");
-			confi_set_root (confi, "FOLDER2");
-			g_printf ("Value from key \"key2\" %s\n", confi_path_get_value (confi, "key2"));
-			g_printf ("Value from key \"FOLDER2/key2\" (expected null) %s\n", confi_path_get_value (confi, "FOLDER2/key2"));
+			zak_confi_set_root (confi, "FOLDER2");
+			g_printf ("Value from key \"key2\" %s\n", zak_confi_path_get_value (confi, "key2"));
+			g_printf ("Value from key \"FOLDER2/key2\" (expected null) %s\n", zak_confi_path_get_value (confi, "FOLDER2/key2"));
 		}
 	else
 		{
-			gchar *val = confi_path_get_value (confi, "folder/key1/key1_2");
+			gchar *val = zak_confi_path_get_value (confi, "folder/key1/key1_2");
 			g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", val);
-			confi_path_set_value (confi, "folder/key1/key1_2", "new value programmatically setted");
-			g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", confi_path_get_value (confi, "folder/key1/key1_2"));
-			confi_path_set_value (confi, "folder/key1/key1_2", val);
+			zak_confi_path_set_value (confi, "folder/key1/key1_2", "new value programmatically setted");
+			g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
+			zak_confi_path_set_value (confi, "folder/key1/key1_2", val);
 
-			confi_add_key (confi, "folder/key2", "key2-2", NULL);
-			confi_path_set_value (confi, "folder/key2/key2-2", "value for key2-2, programmatically setted");
+			zak_confi_add_key (confi, "folder/key2", "key2-2", NULL);
+			zak_confi_path_set_value (confi, "folder/key2/key2-2", "value for key2-2, programmatically setted");
 
-			ConfiKey *ck;
-			ck = confi_path_get_confi_key (confi, "folder/key2/key2-2");
-			g_printf ("ConfiKey for folder/key2/key2-2\n");
+			ZakConfiKey *ck;
+			ck = zak_confi_path_get_confi_key (confi, "folder/key2/key2-2");
+			g_printf ("ZakConfiKey for folder/key2/key2-2\n");
 			g_printf ("Path: %s\n", ck->path);
 			g_printf ("Key: %s\n", ck->key);
 			g_printf ("Description: %s\n", ck->description);
@@ -127,12 +131,12 @@ main (int argc, char **argv)
 			g_printf ("\n");
 
 			g_printf ("Setting root \"folder/key2\"\n");
-			confi_set_root (confi, "folder/key2");
-			g_printf ("Value from key \"key2-1\" %s\n", confi_path_get_value (confi, "key2-1"));
-			g_printf ("Value from key \"folder/key1/key1_2\" (expected null) %s\n", confi_path_get_value (confi, "folder/key1/key1_2"));
+			zak_confi_set_root (confi, "folder/key2");
+			g_printf ("Value from key \"key2-1\" %s\n", zak_confi_path_get_value (confi, "key2-1"));
+			g_printf ("Value from key \"folder/key1/key1_2\" (expected null) %s\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
 		}
 
-	confi_destroy (confi);
+	zak_confi_destroy (confi);
 
 	return 0;
 }

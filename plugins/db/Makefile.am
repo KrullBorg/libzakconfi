@@ -12,7 +12,7 @@ libdb_la_SOURCES = \
 
 libdb_la_LDFLAGS = $(PLUGIN_LIBTOOL_FLAGS)
 libdb_la_LIBADD = \
-	$(top_builddir)/src/libconfi.la \
+	$(top_builddir)/src/libzakconfi.la \
 	$(LIBCONFI_LIBS)
 
 plugins_DATA = db.plugin

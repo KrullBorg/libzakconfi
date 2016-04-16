@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2014 Andrea Zagli <azagli@libero.it>
+ *  Copyright (C) 2014-2016 Andrea Zagli <azagli@libero.it>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef __LIBCONFI_COMMONS_H__
-#define __LIBCONFI_COMMONS_H__
+#ifndef __LIBZAKCONFI_COMMONS_H__
+#define __LIBZAKCONFI_COMMONS_H__
 
 #include <glib-object.h>
 
@@ -25,26 +25,26 @@
 G_BEGIN_DECLS
 
 
-#define CONFI_TYPE_CONFI (confi_confi_get_type ())
+#define ZAK_CONFI_TYPE_CONFI (zak_confi_confi_get_type ())
 
-GType confi_confi_get_type ();
+GType zak_confi_confi_get_type ();
 
-typedef struct _ConfiConfi ConfiConfi;
-struct _ConfiConfi
+typedef struct _ZakConfiConfi ZakConfiConfi;
+struct _ZakConfiConfi
 	{
 		gchar *name;
 		gchar *description;
 	};
 
-ConfiConfi *confi_confi_copy (ConfiConfi *confi);
-void confi_confi_free (ConfiConfi *confi);
+ZakConfiConfi *zak_confi_confi_copy (ZakConfiConfi *confi);
+void zak_confi_confi_free (ZakConfiConfi *confi);
 
-#define CONFI_TYPE_KEY (confi_key_get_type ())
+#define ZAK_CONFI_TYPE_KEY (zak_confi_key_get_type ())
 
-GType confi_key_get_type ();
+GType zak_confi_key_get_type ();
 
-typedef struct _ConfiKey ConfiKey;
-struct _ConfiKey
+typedef struct _ZakConfiKey ZakConfiKey;
+struct _ZakConfiKey
 	{
 		gint id_config;
 		gint id;
@@ -55,10 +55,10 @@ struct _ConfiKey
 		gchar *path;
 	};
 
-ConfiKey *confi_key_copy (ConfiKey *key);
-void confi_key_free (ConfiKey *key);
+ZakConfiKey *zak_confi_key_copy (ZakConfiKey *key);
+void zak_confi_key_free (ZakConfiKey *key);
 
 
 G_END_DECLS
 
-#endif /* __LIBCONFI_COMMONS_H__ */
+#endif /* __LIBZAKCONFI_COMMONS_H__ */
