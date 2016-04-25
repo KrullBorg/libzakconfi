@@ -85,56 +85,29 @@ main (int argc, char **argv)
 	g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, traverse_func, NULL);
 	g_printf ("\n");
 
-	if (g_strcmp0 (peas_plugin_info_get_module_name (ppinfo), "file") == 0)
-		{
-			gchar *val = zak_confi_path_get_value (confi, "FOLDER1/key1");
-			g_printf ("Value from key \"FOLDER1/key1\"\n%s\n\n", val);
-			zak_confi_path_set_value (confi, "FOLDER1/key1", "new value programmatically setted");
-			g_printf ("Value from key \"FOLDER1/key1\"\n%s\n\n", zak_confi_path_get_value (confi, "FOLDER1/key1"));
-			zak_confi_path_set_value (confi, "FOLDER1/key1", val);
+	gchar *val = zak_confi_path_get_value (confi, "folder/key1/key1_2");
+	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", val);
+	zak_confi_path_set_value (confi, "folder/key1/key1_2", "new value programmatically setted");
+	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
+	zak_confi_path_set_value (confi, "folder/key1/key1_2", val);
+	g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
 
-			zak_confi_add_key (confi, "FOLDER2", "key999", NULL);
-			zak_confi_path_set_value (confi, "FOLDER2/key999", "value for key999, programmatically setted");
+	zak_confi_add_key (confi, "folder/key2", "key2-2", NULL);
+	zak_confi_path_set_value (confi, "folder/key2/key2-2", "value for key2-2, programmatically setted");
 
-			ZakConfiKey *ck;
-			ck = zak_confi_path_get_confi_key (confi, "FOLDER1/key2");
-			g_printf ("ZakConfiKey for FOLDER1/key2\n");
-			g_printf ("Path: %s\n", ck->path);
-			g_printf ("Key: %s\n", ck->key);
-			g_printf ("Description: %s\n", ck->description);
-			g_printf ("Value: %s\n", ck->value);
-			g_printf ("\n");
+	ZakConfiKey *ck;
+	ck = zak_confi_path_get_confi_key (confi, "folder/key2/key2-2");
+	g_printf ("ConfiKey for folder/key2/key2-2\n");
+	g_printf ("Path: %s\n", ck->path);
+	g_printf ("Key: %s\n", ck->key);
+	g_printf ("Description: %s\n", ck->description);
+	g_printf ("Value: %s\n", ck->value);
+	g_printf ("\n");
 
-			g_printf ("Setting root \"FOLDER2\"\n");
-			zak_confi_set_root (confi, "FOLDER2");
-			g_printf ("Value from key \"key2\" %s\n", zak_confi_path_get_value (confi, "key2"));
-			g_printf ("Value from key \"FOLDER2/key2\" (expected null) %s\n", zak_confi_path_get_value (confi, "FOLDER2/key2"));
-		}
-	else
-		{
-			gchar *val = zak_confi_path_get_value (confi, "folder/key1/key1_2");
-			g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", val);
-			zak_confi_path_set_value (confi, "folder/key1/key1_2", "new value programmatically setted");
-			g_printf ("Value from key \"folder/key1/key1_2\"\n%s\n\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
-			zak_confi_path_set_value (confi, "folder/key1/key1_2", val);
-
-			zak_confi_add_key (confi, "folder/key2", "key2-2", NULL);
-			zak_confi_path_set_value (confi, "folder/key2/key2-2", "value for key2-2, programmatically setted");
-
-			ZakConfiKey *ck;
-			ck = zak_confi_path_get_confi_key (confi, "folder/key2/key2-2");
-			g_printf ("ZakConfiKey for folder/key2/key2-2\n");
-			g_printf ("Path: %s\n", ck->path);
-			g_printf ("Key: %s\n", ck->key);
-			g_printf ("Description: %s\n", ck->description);
-			g_printf ("Value: %s\n", ck->value);
-			g_printf ("\n");
-
-			g_printf ("Setting root \"folder/key2\"\n");
-			zak_confi_set_root (confi, "folder/key2");
-			g_printf ("Value from key \"key2-1\" %s\n", zak_confi_path_get_value (confi, "key2-1"));
-			g_printf ("Value from key \"folder/key1/key1_2\" (expected null) %s\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
-		}
+	g_printf ("Setting root \"folder/key2\"\n");
+	zak_confi_set_root (confi, "folder/key2");
+	g_printf ("Value from key \"key2-1\" %s\n", zak_confi_path_get_value (confi, "key2-1"));
+	g_printf ("Value from key \"folder/key1/key1_2\" (expected null) %s\n", zak_confi_path_get_value (confi, "folder/key1/key1_2"));
 
 	zak_confi_destroy (confi);
 

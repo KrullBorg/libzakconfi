@@ -38,7 +38,9 @@
 
 static void zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface);
 
-static gboolean zak_confi_file_plugin_path_get_group_and_key (ZakConfiPluggable *pluggable, const gchar *path, gchar **group, gchar **key);
+gboolean zak_confi_file_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string);
+
+static gboolean zak_confi_file_plugin_path_get_group_and_key (const gchar *path, gchar **group, gchar **key);
 static gchar *zak_confi_file_plugin_path_get_value_from_file (ZakConfiPluggable *pluggable, const gchar *path);
 static gchar *zak_confi_file_plugin_path_get_value (ZakConfiPluggable *pluggable, const gchar *path);
 static gboolean zak_confi_file_plugin_path_set_value (ZakConfiPluggable *pluggable, const gchar *path, const gchar *value);
@@ -196,47 +198,24 @@ zak_confi_file_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc
 }
 
 static gboolean
-zak_confi_file_plugin_path_get_group_and_key (ZakConfiPluggable *pluggable, const gchar *path, gchar **group, gchar **key)
+zak_confi_file_plugin_path_get_group_and_key (const gchar *path, gchar **group, gchar **key)
 {
-	gchar *path_;
-	gchar **tokens;
-
-	guint l;
-	guint i;
-	guint c;
+	gchar *last;
 
 	if (path == NULL) return FALSE;
+	if (path[strlen (path) - 1] == '/') return FALSE;
 
-	path_ = g_strdup_printf ("%s/", path);
-	tokens = g_strsplit (path_, "/", -1);
-	if (tokens == NULL) return FALSE;
-
-	l = g_strv_length (tokens);
-	c = 1;
-	for (i = 0; i < l; i++)
+	last = g_strrstr (path, "/");
+	if (last == NULL)
 		{
-			if (g_strcmp0 (tokens[i], "") != 0)
-				{
-					if (c == 1)
-						{
-							*group = g_strdup (tokens[i]);
-							g_strstrip (*group);
-							c = 2;
-						}
-					else if (c == 2)
-						{
-							*key = g_strdup (tokens[i]);
-							g_strstrip (*key);
-							c = 3;
-						}
-					if (c > 2)
-						{
-							break;
-						}
-				}
+			return FALSE;
 		}
-	g_strfreev (tokens);
-	g_free (path_);
+
+	*group = g_strndup (path + (path[0] == '/' ? 1 : 0), strlen (path + (path[0] == '/' ? 1 : 0)) - strlen (last));
+	g_strstrip (*group);
+
+	*key = g_strdup (last + 1);
+	g_strstrip (*key);
 
 	return TRUE;
 }
@@ -257,7 +236,7 @@ static gchar
 
 	group = NULL;
 	key = NULL;
-	if (!zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+	if (!zak_confi_file_plugin_path_get_group_and_key (path, &group, &key))
 		{
 			return NULL;
 		}
@@ -287,9 +266,6 @@ zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentN
 	gsize lk;
 	guint g;
 	guint k;
-
-	gchar *group;
-	gchar *key;
 
 	GError *error;
 
@@ -384,6 +360,7 @@ zak_confi_file_plugin_path_set_value (ZakConfiPluggable *pluggable, const gchar 
 {
 	gboolean ret;
 
+	gchar *path_;
 	gchar *group;
 	gchar *key;
 
@@ -393,9 +370,15 @@ zak_confi_file_plugin_path_set_value (ZakConfiPluggable *pluggable, const gchar 
 
 	g_return_val_if_fail (value != NULL, FALSE);
 
+	path_ = zak_confi_path_normalize (pluggable, path);
+	if (path_ == NULL)
+		{
+			return FALSE;
+		}
+
 	group = NULL;
 	key = NULL;
-	if (!zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+	if (!zak_confi_file_plugin_path_get_group_and_key (path, &group, &key))
 		{
 			return FALSE;
 		}
@@ -452,7 +435,7 @@ static ZakConfiKey
 		{
 			group = NULL;
 			key_ = NULL;
-			if (zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key_))
+			if (zak_confi_file_plugin_path_get_group_and_key (path, &group, &key_))
 				{
 					ck = g_new0 (ZakConfiKey, 1);
 					ck->key = g_strdup (key);
@@ -505,7 +488,7 @@ static ZakConfiKey
 
 	group = NULL;
 	key = NULL;
-	if (zak_confi_file_plugin_path_get_group_and_key (pluggable, path_, &group, &key))
+	if (zak_confi_file_plugin_path_get_group_and_key (path_, &group, &key))
 		{
 			ck = g_new0 (ZakConfiKey, 1);
 			ck->key = g_strdup (key);
@@ -539,7 +522,7 @@ zak_confi_file_plugin_remove_path (ZakConfiPluggable *pluggable, const gchar *pa
 
 	group = NULL;
 	key = NULL;
-	if (zak_confi_file_plugin_path_get_group_and_key (pluggable, path, &group, &key))
+	if (zak_confi_file_plugin_path_get_group_and_key (path, &group, &key))
 		{
 			error = NULL;
 			ret = g_key_file_remove_key (priv->kfile, group, key, &error);
