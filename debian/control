@@ -1,0 +1,24 @@
+Source: libzakconfi
+Priority: optional
+Maintainer: Andrea Zagli <azagli@libero.it>
+Build-Depends: debhelper (>=9), intltool, pkg-config, gtk-doc-tools, libgdaex-dev, libpeas-dev
+Standards-Version: 3.9.8
+Section: libs
+Homepage: http://saetta.ns0.it
+#Vcs-Git: git://anonscm.debian.org/collab-maint/libzakconfi.git
+#Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/libzakconfi.git
+
+Package: libzakconfi-dev
+Section: libdevel
+Architecture: any
+Depends: libzakconfi (= ${binary:Version}), ${misc:Depends}, libgdaex-dev, libpeas-dev
+Description: GLib library to manage configurations - development files
+ GLib library to manage configurations, based on plugins.
+ .
+ Development files.
+
+Package: libzakconfi
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgdaex, libpeas-1.0-0
+Description: GLib library to manage configurations
+ GLib library to manage configurations, based on plugins.

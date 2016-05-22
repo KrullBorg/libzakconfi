@@ -1,0 +1,21 @@
+From: Andrea Zagli <azagli@libero.it>
+Date: Sun, 22 May 2016 16:46:53 +0200
+Subject: DESTDIR support.
+
+---
+ src/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index d9d0262..8f6a78e 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -21,7 +21,7 @@ libzakconfi_include_HEADERS = commons.h \
+ libzakconfi_includedir = $(includedir)/libzakconfi
+ 
+ install-exec-hook:
+-	mkdir -p "$(libdir)/$(PACKAGE)/plugins"
++	mkdir -p "$(DESTDIR)$(libdir)/$(PACKAGE)/plugins"
+ 
+ uninstall-hook:
+ 	rm -rf "$(libdir)/$(PACKAGE)"
