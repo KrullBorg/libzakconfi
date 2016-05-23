@@ -1,0 +1,21 @@
+From: Andrea Zagli <azagli@libero.it>
+Date: Mon, 23 May 2016 18:14:58 +0200
+Subject: libpeas old version.
+
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 15b4d4d..1b91993 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -25,7 +25,7 @@ GOBJECT_INTROSPECTION_CHECK([1.30.0])
+ 
+ # Checks for libraries.
+ PKG_CHECK_MODULES(LIBCONFI, [libgdaex >= 0.5.0
+-                             libpeas-1.0 >= 1.12.0])
++                             libpeas-1.0 >= 1.4.0])
+ 
+ AC_SUBST(LIBCONFI_CFLAGS)
+ AC_SUBST(LIBCONFI_LIBS)
