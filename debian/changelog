@@ -1,5 +1,11 @@
-libzakconfi (0.10.0-1) UNRELEASED; urgency=medium
+libzakconfi (0.10.0-2~1.gbpcfa853) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @cfa8536ac47a0e38aafb97630ed9684f2eecb456 **
+
+  [ Andrea Zagli ]
   * Initial release
+  * Debian package: adjustments fro wheezy.
 
- -- Andrea Zagli <azagli@libero.it>  Sun, 22 May 2016 16:29:20 +0200
+  [ tux ]
+
+ -- Andrea Zagli <azagli@libero.it>  Thu, 28 Jul 2016 15:31:03 +0200
