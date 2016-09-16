@@ -32,7 +32,7 @@ G_BEGIN_DECLS
  * Type checking and casting macros
  */
 #define ZAK_CONFI_TYPE_PLUGGABLE             (zak_confi_pluggable_get_type ())
-#define ZAK_CONFI_PLUGGABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CONFI_TYPE_PLUGGABLE, ZakConfiPluggable))
+#define ZAK_CONFI_PLUGGABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggable))
 #define ZAK_CONFI_PLUGGABLE_IFACE(obj)       (G_TYPE_CHECK_CLASS_CAST ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggableInterface))
 #define ZAK_CONFI_IS_PLUGGABLE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), ZAK_CONFI_TYPE_PLUGGABLE))
 #define ZAK_CONFI_PLUGGABLE_GET_IFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggableInterface))
