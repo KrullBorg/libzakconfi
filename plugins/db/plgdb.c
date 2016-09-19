@@ -40,6 +40,8 @@
 
 static void zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface);
 
+static gboolean zak_confi_db_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string);
+
 static GdaDataModel *zak_confi_db_plugin_path_get_data_model (ZakConfiPluggable *pluggable, const gchar *path);
 static gchar *zak_confi_db_plugin_path_get_value_from_db (ZakConfiPluggable *pluggable, const gchar *path);
 static void zak_confi_db_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode, gint idParent, gchar *path);
@@ -177,7 +179,7 @@ zak_confi_db_plugin_finalize (GObject *object)
 	G_OBJECT_CLASS (zak_confi_db_plugin_parent_class)->finalize (object);
 }
 
-gboolean
+static gboolean
 zak_confi_db_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string)
 {
 	ZakConfiDBPlugin *plugin = ZAK_CONFI_DB_PLUGIN (pluggable);
