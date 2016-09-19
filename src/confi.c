@@ -22,8 +22,6 @@
 
 #include <string.h>
 
-#include <libgdaex/libgdaex.h>
-
 #include "libzakconfi.h"
 
 
@@ -55,14 +53,11 @@ static ZakConfiPluggable *zak_confi_get_confi_pluggable_from_cnc_string (const g
 typedef struct _ZakConfiPrivate ZakConfiPrivate;
 struct _ZakConfiPrivate
 	{
-		GdaEx *gdaex;
 		gint id_config;
 		gchar *name;
 		gchar *description;
 		gchar *root;
 		GHashTable *values;
-
-		gchar chrquot;
 
 		ZakConfiPluggable *pluggable;
 	};

@@ -19,8 +19,6 @@
 #include <glib/gprintf.h>
 #include <libpeas/peas.h>
 
-#include <libgdaex/libgdaex.h>
-
 #include "libzakconfi.h"
 
 gboolean
@@ -41,8 +39,6 @@ main (int argc, char **argv)
 	PeasPluginInfo *ppinfo;
 	GList *confis;
 	GNode *tree;
-
-	gda_init ();
 
 	if (argc < 2)
 		{
