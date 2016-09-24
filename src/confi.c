@@ -22,8 +22,16 @@
 
 #include <string.h>
 
+#include <glib.h>
+
+#ifdef G_OS_WIN32
+#include <windows.h>
+#endif
+
 #include "libzakconfi.h"
 
+
+static gchar *pluginsdir;
 
 enum
 {
@@ -64,6 +72,30 @@ struct _ZakConfiPrivate
 
 G_DEFINE_TYPE (ZakConfi, zak_confi, G_TYPE_OBJECT)
 
+#ifdef G_OS_WIN32
+static HMODULE backend_dll = NULL;
+
+BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
+
+BOOL WINAPI
+DllMain (HINSTANCE hinstDLL,
+         DWORD     fdwReason,
+         LPVOID    lpReserved)
+{
+	switch (fdwReason)
+		{
+			case DLL_PROCESS_ATTACH:
+				backend_dll = (HMODULE) hinstDLL;
+				break;
+			case DLL_THREAD_ATTACH:
+			case DLL_THREAD_DETACH:
+			case DLL_PROCESS_DETACH:
+				break;
+		}
+	return TRUE;
+}
+#endif
+
 static void
 zak_confi_class_init (ZakConfiClass *klass)
 {
@@ -100,7 +132,7 @@ static ZakConfiPluggable
 			return NULL;
 		}
 
-	peas_engine_add_search_path (peas_engine, PLUGINSDIR, NULL);
+	peas_engine_add_search_path (peas_engine, pluginsdir, NULL);
 
 	lst_plugins = peas_engine_get_plugin_list (peas_engine);
 	while (lst_plugins)
@@ -150,6 +182,33 @@ ZakConfi
 	ZakConfiPluggable *pluggable;
 
 	g_return_val_if_fail (cnc_string != NULL, NULL);
+
+#ifdef G_OS_WIN32
+
+	gchar *moddir;
+	gchar *p;
+
+	moddir = g_win32_get_package_installation_directory_of_module (backend_dll);
+
+	p = g_strrstr (moddir, g_strdup_printf ("%c", G_DIR_SEPARATOR));
+	if (p != NULL
+	    && (g_ascii_strcasecmp (p + 1, "src") == 0
+	    || g_ascii_strcasecmp (p + 1, ".libs") == 0))
+		{
+			pluginsdir = g_strdup (PLUGINSDIR);
+		}
+	else
+		{
+			pluginsdir = g_build_filename (moddir, "lib", PACKAGE, "plugins", NULL);
+		}
+
+#undef PLUGINSDIR
+
+#else
+
+	pluginsdir = g_strdup (PLUGINSDIR);
+
+#endif
 
 	confi = NULL;
 
