@@ -249,7 +249,7 @@ PeasPluginInfo
  * contains configuration.
  * @filter: (nullable):
  *
- * Returns: (element-type ZakConfi) (transfer container):  a #GList of #ZakConfiZakConfi. If there's no configurations, returns a valid
+ * Returns: (element-type ZakConfiConfi) (transfer container):  a #GList of #ZakConfiConfi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
  */
 GList

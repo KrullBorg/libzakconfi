@@ -406,10 +406,11 @@ GNode
 
 	ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
+	ck->config = "Default";
 	ck->path = "";
-	ck->description = "";
 	ck->key = g_strdup ("/");
 	ck->value = "";
+	ck->description = "";
 
 	node = g_node_new (ck);
 
@@ -438,10 +439,11 @@ static ZakConfiKey
 			if (zak_confi_file_plugin_path_get_group_and_key (path, &group, &key_))
 				{
 					ck = g_new0 (ZakConfiKey, 1);
+					ck->config = "Default";
+					ck->path = g_strdup (path);
 					ck->key = g_strdup (key);
 					ck->value = zak_confi_file_plugin_path_get_value (pluggable, path);
 					ck->description = g_key_file_get_comment (priv->kfile, group, key, NULL);;
-					ck->path = g_strdup (path);
 
 					g_free (group);
 					g_free (key_);
@@ -491,10 +493,11 @@ static ZakConfiKey
 	if (zak_confi_file_plugin_path_get_group_and_key (path_, &group, &key))
 		{
 			ck = g_new0 (ZakConfiKey, 1);
+			ck->config = "Default";
+			ck->path = g_strdup (group);
 			ck->key = g_strdup (key);
 			ck->value = zak_confi_file_plugin_path_get_value (pluggable, path_);
 			ck->description = g_key_file_get_comment (priv->kfile, group, key, NULL);
-			ck->path = g_strdup (group);
 
 			g_free (group);
 			g_free (key);

@@ -23,7 +23,7 @@
 #include <config.h>
 #endif
 
-#include <commons.h>
+#include "commons.h"
 
 ZakConfiConfi
 *zak_confi_confi_copy (ZakConfiConfi *confi)
@@ -53,13 +53,11 @@ ZakConfiKey
 	ZakConfiKey *b;
 
 	b = g_slice_new (ZakConfiKey);
-	b->id_config = key->id_config;
-	b->id = key->id;
-	b->id_parent = key->id_parent;
+	b->config = g_strdup (key->config);
+	b->path = g_strdup (key->path);
 	b->key = g_strdup (key->key);
 	b->value = g_strdup (key->value);
 	b->description = g_strdup (key->description);
-	b->path = g_strdup (key->path);
 
 	return b;
 }
@@ -67,10 +65,11 @@ ZakConfiKey
 void
 zak_confi_key_free (ZakConfiKey *key)
 {
+	g_free (key->config);
+	g_free (key->path);
 	g_free (key->key);
 	g_free (key->value);
 	g_free (key->description);
-	g_free (key->path);
 	g_slice_free (ZakConfiKey, key);
 }
 
