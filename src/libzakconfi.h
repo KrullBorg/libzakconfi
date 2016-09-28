@@ -69,6 +69,10 @@ GNode *zak_confi_get_tree (ZakConfi *confi);
 gchar *zak_confi_normalize_root (const gchar *root);
 gboolean zak_confi_set_root (ZakConfi *confi, const gchar *root);
 
+gboolean zak_confi_set_config (ZakConfi *confi,
+							   const gchar *name,
+							   const gchar *description);
+
 ZakConfiKey *zak_confi_add_key (ZakConfi *confi,
                          const gchar *parent,
                          const gchar *key,

@@ -67,6 +67,9 @@ struct _ZakConfiPluggableInterface {
 	ZakConfiConfi *(*add_config) (ZakConfiPluggable *pluggable,
 	                      const gchar *name,
 	                      const gchar *description);
+	gboolean (*set_config) (ZakConfiPluggable *pluggable,
+	                      const gchar *name,
+	                      const gchar *description);
 	ZakConfiKey *(*add_key) (ZakConfiPluggable *pluggable,
 	                      const gchar *parent,
 	                      const gchar *key,
@@ -96,6 +99,9 @@ gboolean zak_confi_pluggable_path_set_value (ZakConfiPluggable *pluggable,
                                const gchar *value);
 GNode *zak_confi_pluggable_get_tree (ZakConfiPluggable *pluggable);
 ZakConfiConfi *zak_confi_pluggable_add_config (ZakConfiPluggable *pluggable,
+                                   const gchar *name,
+                                   const gchar *description);
+gboolean zak_confi_pluggable_set_config (ZakConfiPluggable *pluggable,
                                    const gchar *name,
                                    const gchar *description);
 ZakConfiKey *zak_confi_pluggable_add_key (ZakConfiPluggable *pluggable,

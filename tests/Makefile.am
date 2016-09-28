@@ -11,6 +11,7 @@ LDADD = $(top_builddir)/src/libzakconfi.la
 
 noinst_PROGRAMS = test \
                   test_add_config \
-                  test_get_configs_list
+                  test_get_configs_list \
+                  test_set_config
 
 EXTRA_DIST = gir.py

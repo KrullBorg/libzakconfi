@@ -42,7 +42,6 @@ docs/reference/html/
 docs/reference/xml/
 libtool
 stamp-h1
-tests/test
 POTFILES
 mkinstalldirs
 stamp-it
@@ -52,6 +51,7 @@ Rules-quot
 tests/test
 tests/test_get_configs_list
 tests/test_add_config
+tests/test_set_config
 *.csv
 gtk-doc.m4
 *.gir

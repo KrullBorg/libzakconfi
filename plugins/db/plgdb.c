@@ -96,25 +96,9 @@ zak_confi_db_plugin_set_property (GObject      *object,
 				break;
 
 			case PROP_NAME:
-				priv->name = g_strdup (g_value_get_string (value));
-				sql = g_strdup_printf ("UPDATE configs "
-				                       "SET name = '%s' "
-				                       "WHERE id = %d",
-				                       gdaex_strescape (priv->name, NULL),
-				                       priv->id_config);
-				gdaex_execute (priv->gdaex, sql);
-				g_free (sql);
 				break;
 
 			case PROP_DESCRIPTION:
-				priv->description = g_strdup (g_value_get_string (value));
-				sql = g_strdup_printf ("UPDATE configs "
-				                       "SET description = '%s' "
-				                       "WHERE id = %d",
-				                       gdaex_strescape (priv->description, NULL),
-				                       priv->id_config);
-				gdaex_execute (priv->gdaex, sql);
-				g_free (sql);
 				break;
 
 			case PROP_ROOT:
@@ -550,6 +534,50 @@ static ZakConfiConfi
 	return cc;
 }
 
+static gboolean
+zak_confi_db_plugin_set_config (ZakConfiPluggable *pluggable,
+                                   const gchar *name,
+                                   const gchar *description)
+{
+	gboolean ret;
+	gchar *sql;
+
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	g_return_val_if_fail (name != NULL, FALSE);
+
+	ret = TRUE;
+
+	sql = g_strdup_printf ("UPDATE configs"
+						   " SET name = '%s'"
+						   " WHERE id = %d",
+						   gdaex_strescape (name, NULL),
+						   priv->id_config);
+	if (gdaex_execute (priv->gdaex, sql) < 1)
+		{
+			ret = FALSE;
+		}
+	g_free (sql);
+	priv->name = g_strdup (name);
+
+	if (description != NULL)
+		{
+			sql = g_strdup_printf ("UPDATE configs"
+								   " SET description = '%s'"
+								   " WHERE id = %d",
+								   gdaex_strescape (description, NULL),
+								   priv->id_config);
+			if (gdaex_execute (priv->gdaex, sql) < 1)
+				{
+					ret = FALSE;
+				}
+			g_free (sql);
+			priv->description = g_strdup (description);
+		}
+
+	return ret;
+}
+
 static ZakConfiKey
 *zak_confi_db_plugin_add_key (ZakConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
 {
@@ -931,6 +959,7 @@ zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 	iface->path_set_value = zak_confi_db_plugin_path_set_value;
 	iface->get_tree = zak_confi_db_plugin_get_tree;
 	iface->add_config = zak_confi_db_plugin_add_config;
+	iface->set_config = zak_confi_db_plugin_set_config;
 	iface->add_key = zak_confi_db_plugin_add_key;
 	iface->key_set_key = zak_confi_db_plugin_key_set_key;
 	iface->path_get_confi_key = zak_confi_db_plugin_path_get_confi_key;

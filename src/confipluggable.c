@@ -61,7 +61,7 @@ zak_confi_pluggable_default_init (ZakConfiPluggableInterface *iface)
 			                                                          "Configuraton Name",
 			                                                          "The configuration name",
 			                                                          "",
-			                                                          G_PARAM_READWRITE));
+			                                                          G_PARAM_READABLE));
 
 			/**
 			* ZakConfiPluggable:description:
@@ -72,7 +72,7 @@ zak_confi_pluggable_default_init (ZakConfiPluggableInterface *iface)
 			                                                          "Configuraton Description",
 			                                                          "The configuration description",
 			                                                          "",
-			                                                          G_PARAM_READWRITE));
+			                                                          G_PARAM_READABLE));
 
 			/**
 			* ZakConfiPluggable:root:
@@ -192,7 +192,7 @@ GNode
 }
 
 /**
- * zak_confi_pluggable_add_confi:
+ * zak_confi_pluggable_add_config:
  * @pluggable: a #ZakConfiPluggable object.
  * @name: the name of the config..
  * @description: the config's description.
@@ -210,6 +210,27 @@ ZakConfiConfi
 	g_return_val_if_fail (iface->add_config != NULL, FALSE);
 
 	return iface->add_config (pluggable, name, description);
+}
+
+/**
+ * zak_confi_pluggable_set_config:
+ * @pluggable: a #ZakConfiPluggable object.
+ * @name: the name of the config..
+ * @description: the config's description.
+ *
+ * Returns:
+ */
+gboolean
+zak_confi_pluggable_set_config (ZakConfiPluggable *pluggable, const gchar *name, const gchar *description)
+{
+	ZakConfiPluggableInterface *iface;
+
+	g_return_val_if_fail (ZAK_CONFI_IS_PLUGGABLE (pluggable), FALSE);
+
+	iface = ZAK_CONFI_PLUGGABLE_GET_IFACE (pluggable);
+	g_return_val_if_fail (iface->set_config != NULL, FALSE);
+
+	return iface->set_config (pluggable, name, description);
 }
 
 /**

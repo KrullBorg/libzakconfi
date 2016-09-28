@@ -398,6 +398,34 @@ zak_confi_set_root (ZakConfi *confi, const gchar *root)
 }
 
 /**
+ * zak_confi_set_config:
+ * @confi: a #ZakConfi object.
+ * @name:
+ * @description:
+ *
+ * Returns:
+ */
+gboolean
+zak_confi_set_config (ZakConfi *confi,
+					  const gchar *name,
+					  const gchar *description)
+{
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
+
+	if (priv->pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			return FALSE;
+		}
+	else
+		{
+			return zak_confi_pluggable_set_config (priv->pluggable,
+												   name,
+												   description);
+		}
+}
+
+/**
  * zak_confi_add_key:
  * @confi: a #ZakConfi object.
  * @parent: the path where add the key.

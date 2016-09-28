@@ -91,13 +91,9 @@ zak_confi_file_plugin_set_property (GObject      *object,
 				break;
 
 			case PROP_NAME:
-				priv->name = g_strdup (g_value_get_string (value));
-				zak_confi_file_plugin_path_set_value ((ZakConfiPluggable *)plugin, "/CONFI/name", priv->name);
 				break;
 
 			case PROP_DESCRIPTION:
-				priv->description = g_strdup (g_value_get_string (value));
-				zak_confi_file_plugin_path_set_value ((ZakConfiPluggable *)plugin, "/CONFI/description", priv->description);
 				break;
 
 			case PROP_ROOT:
@@ -425,6 +421,21 @@ static ZakConfiConfi
 	return NULL;
 }
 
+static gboolean
+zak_confi_file_plugin_set_config (ZakConfiPluggable *pluggable, const gchar *name, const gchar *description)
+{
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	priv->name = g_strdup (name);
+	zak_confi_file_plugin_path_set_value (pluggable, "/CONFI/name", priv->name);
+
+	if (description != NULL)
+		{
+			priv->description = g_strdup (description);
+			zak_confi_file_plugin_path_set_value (pluggable, "/CONFI/description", priv->description);
+		}
+}
+
 static ZakConfiKey
 *zak_confi_file_plugin_add_key (ZakConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
 {
@@ -595,6 +606,7 @@ zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 	iface->path_set_value = zak_confi_file_plugin_path_set_value;
 	iface->get_tree = zak_confi_file_plugin_get_tree;
 	iface->add_config = zak_confi_file_plugin_add_config;
+	iface->set_config = zak_confi_file_plugin_set_config;
 	iface->add_key = zak_confi_file_plugin_add_key;
 	iface->key_set_key = zak_confi_file_plugin_key_set_key;
 	iface->path_get_confi_key = zak_confi_file_plugin_path_get_confi_key;
