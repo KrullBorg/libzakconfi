@@ -50,6 +50,7 @@ intltool-*
 Rules-quot
 *.exe
 tests/test
+tests/test_get_configs_list
 *.csv
 gtk-doc.m4
 *.gir

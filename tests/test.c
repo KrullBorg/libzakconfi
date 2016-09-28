@@ -37,7 +37,6 @@ main (int argc, char **argv)
 	PeasEngine *engine;
 	ZakConfi *confi;
 	PeasPluginInfo *ppinfo;
-	GList *confis;
 	GNode *tree;
 
 	if (argc < 2)
@@ -48,19 +47,6 @@ main (int argc, char **argv)
 
 	engine = peas_engine_get_default ();
 	peas_engine_add_search_path (engine, "./plugins", NULL);
-
-	confis = zak_confi_get_configs_list (argv[1], NULL);
-	while (confis)
-		{
-			ZakConfiConfi *confi = (ZakConfiConfi *)confis->data;
-
-			if (confi == NULL) break;
-
-			g_printf ("NAME: %s\nDESCRIPTION: %s\n\n",
-			          confi->name,
-			          confi->description);
-			confis = g_list_next (confis);
-		}
 
 	confi = zak_confi_new (argv[1]);
 	if (confi == NULL)

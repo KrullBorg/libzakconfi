@@ -9,6 +9,7 @@ LIBS = $(LIBCONFI_LIBS) \
 
 LDADD = $(top_builddir)/src/libzakconfi.la
 
-noinst_PROGRAMS = test
+noinst_PROGRAMS = test \
+                  test_get_configs_list
 
 EXTRA_DIST = gir.py
