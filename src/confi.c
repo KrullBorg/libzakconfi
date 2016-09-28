@@ -254,21 +254,55 @@ PeasPluginInfo
  */
 GList
 *zak_confi_get_configs_list (const gchar *cnc_string,
-                         const gchar *filter)
+							 const gchar *filter)
 {
 	ZakConfiPluggable *pluggable;
 	GList *lst;
 
-	lst = NULL;
-
 	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
 
-	if (pluggable != NULL)
+	if (pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			lst = NULL;
+		}
+	else
 		{
 			lst = zak_confi_pluggable_get_configs_list (pluggable, filter);
 		}
 
 	return lst;
+}
+
+/**
+ * zak_confi_add_config:
+ * @cnc_string:
+ * @name:
+ * @description:
+ *
+ * Returns: a #ZakConfiConfi struct.
+ */
+ZakConfiConfi
+*zak_confi_add_config (const gchar *cnc_string,
+					   const gchar *name,
+					   const gchar *description)
+{
+	ZakConfiPluggable *pluggable;
+	ZakConfiConfi *cc;
+
+	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
+
+	if (pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			cc = NULL;
+		}
+	else
+		{
+			cc = zak_confi_pluggable_add_config (pluggable, name, description);
+		}
+
+	return cc;
 }
 
 /**

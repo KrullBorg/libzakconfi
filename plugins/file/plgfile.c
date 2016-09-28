@@ -419,6 +419,12 @@ GNode
 	return node;
 }
 
+static ZakConfiConfi
+*zak_confi_file_plugin_add_config (ZakConfiPluggable *pluggable, const gchar *name, const gchar *description)
+{
+	return NULL;
+}
+
 static ZakConfiKey
 *zak_confi_file_plugin_add_key (ZakConfiPluggable *pluggable, const gchar *parent, const gchar *key, const gchar *value)
 {
@@ -588,6 +594,7 @@ zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 	iface->path_get_value = zak_confi_file_plugin_path_get_value;
 	iface->path_set_value = zak_confi_file_plugin_path_set_value;
 	iface->get_tree = zak_confi_file_plugin_get_tree;
+	iface->add_config = zak_confi_file_plugin_add_config;
 	iface->add_key = zak_confi_file_plugin_add_key;
 	iface->key_set_key = zak_confi_file_plugin_key_set_key;
 	iface->path_get_confi_key = zak_confi_file_plugin_path_get_confi_key;

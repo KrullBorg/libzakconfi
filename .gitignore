@@ -51,6 +51,7 @@ Rules-quot
 *.exe
 tests/test
 tests/test_get_configs_list
+tests/test_add_config
 *.csv
 gtk-doc.m4
 *.gir
