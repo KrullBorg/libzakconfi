@@ -264,11 +264,11 @@ static GdaDataModel
 			token = g_strstrip (g_strdup (tokens[i]));
 			if (strcmp (token, "") != 0)
 				{
-					sql = g_strdup_printf ("SELECT * "
-					                       "FROM %cvalues%c "
-					                       "WHERE id_configs = %d "
-					                       "AND id_parent = %d "
-					                       "AND %ckey%c = '%s'",
+					sql = g_strdup_printf ("SELECT *"
+					                       " FROM %cvalues%c"
+					                       " WHERE id_configs = %d"
+					                       " AND id_parent = %d"
+					                       " AND %ckey%c = '%s'",
 					                       priv->chrquot, priv->chrquot,
 					                       priv->id_config,
 					                       id_parent,
@@ -749,22 +749,29 @@ zak_confi_db_plugin_key_set_key (ZakConfiPluggable *pluggable,
 	gboolean ret;
 	gchar *sql;
 
+	GdaDataModel *dm;
+
 	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	dm = zak_confi_db_plugin_path_get_data_model (pluggable, g_strdup_printf ("%s/%s", ck->path, ck->key));
+	if (dm == NULL)
+		{
+			return FALSE;
+		}
 
 	sql = g_strdup_printf ("UPDATE %cvalues%c"
 	                       " SET %ckey%c = '%s',"
 	                       " value = '%s',"
 	                       " description = '%s'"
 	                       " WHERE id_configs = %d"
-	                       " AND id = (SELECT id FROM %cconfigs%c WHERE name = '%s')",
+	                       " AND id = %d",
 	                       priv->chrquot, priv->chrquot,
 	                       priv->chrquot, priv->chrquot,
 	                       gdaex_strescape (ck->key, NULL),
 	                       gdaex_strescape (ck->value, NULL),
 	                       gdaex_strescape (ck->description, NULL),
 	                       priv->id_config,
-	                       priv->chrquot, priv->chrquot,
-	                       ck->config);
+	                       gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
 
 	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 	g_free (sql);
