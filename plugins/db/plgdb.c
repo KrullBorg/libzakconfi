@@ -879,18 +879,21 @@ zak_confi_db_plugin_remove_path (ZakConfiPluggable *pluggable, const gchar *path
 			gchar *path_ = g_strdup (path);
 
 			/* removing every child key */
-			GNode *node, *root;
+			GNode *node;
 			gint id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 
-			node = g_node_new (path_);
+			ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
+
+			ck->config = g_strdup (priv->name);
+			ck->path = path_;
+			ck->key = gdaex_data_model_get_field_value_stringify_at (dm, 0, "key");
+			ck->value = "";
+			ck->description = "";
+
+			node = g_node_new (ck);
 			zak_confi_db_plugin_get_children (pluggable, node, id, path_);
 
-			root = g_node_get_root (node);
-
-			if (g_node_n_nodes (root, G_TRAVERSE_ALL) > 1)
-				{
-					g_node_traverse (root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, zak_confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
-				}
+			g_node_traverse (node, G_POST_ORDER, G_TRAVERSE_ALL, -1, zak_confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
 
 			/* removing the path */
 			ret = zak_confi_db_plugin_delete_id_from_db_values (pluggable, id);
