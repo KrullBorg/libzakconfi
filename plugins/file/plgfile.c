@@ -163,11 +163,34 @@ zak_confi_file_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc
 {
 	gboolean ret;
 	GError *error;
+	gchar *strconfname;
+	gchar *strconfnameend;
+	gchar *cncstringnew;
 
 	ZakConfiFilePlugin *plugin = ZAK_CONFI_FILE_PLUGIN (pluggable);
 	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
 
 	priv->cnc_string = g_strdup (cnc_string);
+
+	strconfname = g_strstr_len (priv->cnc_string, -1, ";CONFI_NAME");
+	if (strconfname != NULL)
+		{
+			/* ignore CONFI_NAME parameter on connection string */
+			strconfnameend = g_strstr_len (strconfname + 1, -1, ";");
+			if (strconfnameend == NULL)
+				{
+					priv->cnc_string[strlen (priv->cnc_string) - strlen (strconfname)] = '\0';
+				}
+			else
+				{
+					cncstringnew = g_strdup_printf ("%s%s",
+													g_strndup (priv->cnc_string, strlen (priv->cnc_string) - strlen (strconfname)),
+													g_strdup (strconfnameend));
+					g_free (priv->cnc_string);
+					priv->cnc_string = g_strdup (cncstringnew);
+					g_free (cncstringnew);
+				}
+		}
 
 	priv->kfile = g_key_file_new ();
 	error = NULL;
