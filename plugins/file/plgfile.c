@@ -499,13 +499,35 @@ zak_confi_file_plugin_key_set_key (ZakConfiPluggable *pluggable,
                                ZakConfiKey *ck)
 {
 	gboolean ret;
+	GError *error;
 
 	gchar *path;
+	gchar *group;
+	gchar *key;
 
 	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	path = g_strdup_printf ("%s/%s", ck->path, ck->key);
 	ret = zak_confi_file_plugin_path_set_value (pluggable, path, ck->value);
+
+	group = NULL;
+	key = NULL;
+	if (!zak_confi_file_plugin_path_get_group_and_key (path, &group, &key))
+		{
+			return FALSE;
+		}
+
+	g_key_file_set_comment (priv->kfile, group, key, ck->description, NULL);
+	g_free (group);
+	g_free (key);
+
+	error = NULL;
+	ret = g_key_file_save_to_file (priv->kfile, priv->cnc_string, &error);
+	if (error != NULL)
+		{
+			ret = FALSE;
+		}
+
 	g_free (path);
 
 	return ret;
