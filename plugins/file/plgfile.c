@@ -276,6 +276,89 @@ static gchar
 	return ret;
 }
 
+static GNode
+*check_nodes (ZakConfiPluggable *pluggable, const gchar *path, GNode *tree)
+{
+	gchar **tokens;
+	guint i;
+	gchar *token;
+
+	gchar *group;
+	GString *_path;
+
+	guint n;
+	GNode *cur_node;
+	GNode *this_node;
+	GNode *parent_node;
+
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	tokens = g_strsplit (path, "/", -1);
+
+	_path = g_string_new ("");
+
+	i = 0;
+	cur_node = g_node_get_root (tree);
+	while (tokens[i] != NULL)
+		{
+			parent_node = NULL;
+
+			token = g_strstrip (g_strdup (tokens[i]));
+			if (g_strcmp0 (token, "") == 0)
+				{
+					i++;
+					continue;
+				}
+
+			group = g_strdup_printf ("%s%s%s", _path->str, g_strcmp0 (_path->str, "") != 0 ? "/" : "", tokens[i]);
+
+			n = 0;
+			while ((parent_node = g_node_nth_child (cur_node, n)) != NULL)
+				{
+					ZakConfiKey *cknode = (ZakConfiKey *)parent_node->data;
+
+					if (g_strcmp0 (g_strdup_printf ("%s%s%s", cknode->path, g_strcmp0 (cknode->path, "") == 0 ? "" : "/", cknode->key), group) == 0)
+						{
+							break;
+						}
+					else
+						{
+							parent_node = NULL;
+						}
+
+					n++;
+				}
+
+			if (parent_node == NULL)
+				{
+					/* create the missing parent group */
+					ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
+
+					ck->key = g_strdup (tokens[i]);
+					ck->value = "";
+					ck->description = "";
+					ck->path = g_strdup (_path->str);
+
+					g_node_append_data (cur_node, ck);
+				}
+			else
+				{
+					cur_node = parent_node;
+				}
+
+			g_string_append_printf (_path, "%s%s", g_strcmp0 (_path->str, "") != 0 ? "/" : "", tokens[i]);
+
+			g_free (token);
+			g_free (group);
+
+			i++;
+		}
+
+	g_strfreev (tokens);
+
+	return cur_node;
+}
+
 static void
 zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode)
 {
@@ -296,14 +379,7 @@ zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentN
 
 	for (g = 0; g < lg; g++)
 		{
-			ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
-
-			ck->key = g_strdup (groups[g]);
-			ck->value = "";
-			ck->description = "";
-			ck->path = "";
-
-			gNode = g_node_append_data (parentNode, ck);
+			gNode = check_nodes (pluggable, groups[g], parentNode);
 
 			error = NULL;
 			keys = g_key_file_get_keys (priv->kfile, groups[g], &lk, &error);
