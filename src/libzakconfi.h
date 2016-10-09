@@ -66,6 +66,11 @@ ZakConfiConfi *zak_confi_add_config (const gchar *cnc_string,
 									 const gchar *name,
 									 const gchar *description);
 
+ZakConfiConfi *zak_confi_add_config_from_confi (ZakConfi *confi_source,
+												const gchar *cnc_string,
+												const gchar *name_new,
+												const gchar *description_new);
+
 GNode *zak_confi_get_tree (ZakConfi *confi);
 
 gchar *zak_confi_normalize_root (const gchar *root);

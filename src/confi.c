@@ -300,7 +300,7 @@ ZakConfiConfi
  * @name:
  * @description:
  *
- * Returns: a #ZakConfiConfi struct.
+ * Returns: a #ZakConfiConfi struct just rceated.
  */
 ZakConfiConfi
 *zak_confi_add_config (const gchar *cnc_string,
@@ -320,6 +320,69 @@ ZakConfiConfi
 	else
 		{
 			cc = zak_confi_pluggable_add_config (pluggable, name, description);
+		}
+
+	return cc;
+}
+
+static gboolean
+add_traverse_func (GNode *node,
+               gpointer data)
+{
+	ZakConfiKey *ck = (ZakConfiKey *)node->data;
+
+	if (g_strcmp0 (ck->key, "") != 0
+		&& g_strcmp0 (ck->key, "/") != 0)
+		{
+			zak_confi_add_key ((ZakConfi *)data, ck->path, ck->key, ck->value);
+		}
+
+	return FALSE;
+}
+
+/**
+ * zak_confi_add_config_from_confi:
+ * @confi_source:
+ * @cnc_string:
+ * @name_new:
+ * @description_new:
+ *
+ * Returns: a #ZakConfiConfi struct just created.
+ */
+ZakConfiConfi
+*zak_confi_add_config_from_confi (ZakConfi *confi_source,
+								  const gchar *cnc_string,
+								  const gchar *name_new,
+								  const gchar *description_new)
+{
+	ZakConfi *confi;
+	ZakConfiConfi *cc;
+
+	GNode *tree;
+
+	gchar *confi_name;
+
+	cc = zak_confi_add_config (cnc_string, name_new, description_new);
+	if (cc != NULL)
+		{
+			tree = zak_confi_get_tree (confi_source);
+			if (tree != NULL)
+				{
+					confi_name = g_strdup_printf ("%s;CONFI_NAME=%s", cnc_string, cc->name);
+
+					confi = zak_confi_new (confi_name);
+
+					if (confi != NULL)
+						{
+							g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, add_traverse_func, (gpointer)confi);
+						}
+
+					g_free (confi_name);
+				}
+			else
+				{
+					g_warning ("ZakConfi source is empty.");
+				}
 		}
 
 	return cc;

@@ -289,9 +289,11 @@ static GdaDataModel
 						}
 					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 				}
+			g_free (token);
 
 			i++;
 		}
+	g_strfreev (tokens);
 
 	return dm;
 }
@@ -631,37 +633,16 @@ static ZakConfiKey
 			sql = g_strdup_printf ("SELECT id"
 			                       " FROM %cvalues%c"
 			                       " WHERE id_configs = %d"
+								   " AND id_parent = %d"
 			                       " AND key = '%s'",
 			                       priv->chrquot, priv->chrquot,
 			                       priv->id_config,
+								   id_parent,
 			                       gdaex_strescape (key_, NULL));
 			dm = gdaex_query (priv->gdaex, sql);
 			g_free (sql);
-			if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
-				{
-					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
-					g_object_unref (dm);
-
-					sql = g_strdup_printf ("UPDATE %cvalues%c"
-					                       " SET %ckey%c = '%s',"
-					                       " value = '%s',"
-					                       " WHERE id_configs = %d"
-					                       " AND id = %d",
-					                       priv->chrquot, priv->chrquot,
-					                       priv->chrquot, priv->chrquot,
-					                       gdaex_strescape (key_, NULL),
-					                       gdaex_strescape (ck->value, NULL),
-					                       priv->id_config,
-					                       id);
-					if (gdaex_execute (priv->gdaex, sql) == -1)
-						{
-							/* TO DO */
-							g_free (sql);
-							return NULL;
-						}
-					g_free (sql);
-				}
-			else
+			if (dm == NULL
+				|| gda_data_model_get_n_rows (dm) < 1)
 				{
 					id = 0;
 
