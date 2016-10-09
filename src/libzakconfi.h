@@ -60,6 +60,8 @@ PeasPluginInfo *zak_confi_get_plugin_info (ZakConfi *confi);
 GList *zak_confi_get_configs_list (const gchar *cnc_string,
 								   const gchar *filter);
 
+ZakConfiConfi *zak_confi_get_confi_confi (ZakConfi *confi);
+
 ZakConfiConfi *zak_confi_add_config (const gchar *cnc_string,
 									 const gchar *name,
 									 const gchar *description);

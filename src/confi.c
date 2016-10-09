@@ -275,6 +275,26 @@ GList
 }
 
 /**
+ * zak_confi_get_confi_confi:
+ * @confi:
+ *
+ * Returns: a #ZakConfiConfi struct.
+ */
+ZakConfiConfi
+*zak_confi_get_confi_confi (ZakConfi *confi)
+{
+	ZakConfiConfi *cc;
+
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
+
+	cc = g_new0 (ZakConfiConfi, 1);
+	cc->name = g_strdup (priv->name);
+	cc->description = g_strdup (priv->description);
+
+	return cc;
+}
+
+/**
  * zak_confi_add_config:
  * @cnc_string:
  * @name:
