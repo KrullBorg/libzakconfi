@@ -30,7 +30,7 @@ main (int argc, char **argv)
 
 	if (argc < 5)
 		{
-			g_error ("Usage: test_add_config <connection string source> <connection string destination> <config name> <config description>");
+			g_error ("Usage: add_config_from_confi <connection string source> <connection string destination> <config name> <config description>");
 			return 0;
 		}
 

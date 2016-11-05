@@ -62,6 +62,7 @@ AC_CONFIG_FILES([
   plugins/db/Makefile
   plugins/file/Makefile
   tests/Makefile
+  tools/Makefile
   data/Makefile
   docs/Makefile
   docs/reference/Makefile

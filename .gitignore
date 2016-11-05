@@ -52,8 +52,8 @@ tests/test
 tests/test_get_configs_list
 tests/test_get_tree
 tests/test_add_config
-tests/test_add_config_from_confi
 tests/test_set_config
+tools/add_config_from_confi
 *.csv
 gtk-doc.m4
 *.gir
