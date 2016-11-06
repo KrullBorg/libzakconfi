@@ -58,12 +58,27 @@ ZakConfi *zak_confi_new (const gchar *cnc_string);
 PeasPluginInfo *zak_confi_get_plugin_info (ZakConfi *confi);
 
 GList *zak_confi_get_configs_list (const gchar *cnc_string,
-                               const gchar *filter);
+								   const gchar *filter);
+
+ZakConfiConfi *zak_confi_get_confi_confi (ZakConfi *confi);
+
+ZakConfiConfi *zak_confi_add_config (const gchar *cnc_string,
+									 const gchar *name,
+									 const gchar *description);
+
+ZakConfiConfi *zak_confi_add_config_from_confi (ZakConfi *confi_source,
+												const gchar *cnc_string,
+												const gchar *name_new,
+												const gchar *description_new);
 
 GNode *zak_confi_get_tree (ZakConfi *confi);
 
 gchar *zak_confi_normalize_root (const gchar *root);
 gboolean zak_confi_set_root (ZakConfi *confi, const gchar *root);
+
+gboolean zak_confi_set_config (ZakConfi *confi,
+							   const gchar *name,
+							   const gchar *description);
 
 ZakConfiKey *zak_confi_add_key (ZakConfi *confi,
                          const gchar *parent,

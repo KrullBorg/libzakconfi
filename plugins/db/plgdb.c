@@ -40,6 +40,8 @@
 
 static void zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface);
 
+static gboolean zak_confi_db_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string);
+
 static GdaDataModel *zak_confi_db_plugin_path_get_data_model (ZakConfiPluggable *pluggable, const gchar *path);
 static gchar *zak_confi_db_plugin_path_get_value_from_db (ZakConfiPluggable *pluggable, const gchar *path);
 static void zak_confi_db_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode, gint idParent, gchar *path);
@@ -94,25 +96,9 @@ zak_confi_db_plugin_set_property (GObject      *object,
 				break;
 
 			case PROP_NAME:
-				priv->name = g_strdup (g_value_get_string (value));
-				sql = g_strdup_printf ("UPDATE configs "
-				                       "SET name = '%s' "
-				                       "WHERE id = %d",
-				                       gdaex_strescape (priv->name, NULL),
-				                       priv->id_config);
-				gdaex_execute (priv->gdaex, sql);
-				g_free (sql);
 				break;
 
 			case PROP_DESCRIPTION:
-				priv->description = g_strdup (g_value_get_string (value));
-				sql = g_strdup_printf ("UPDATE configs "
-				                       "SET description = '%s' "
-				                       "WHERE id = %d",
-				                       gdaex_strescape (priv->description, NULL),
-				                       priv->id_config);
-				gdaex_execute (priv->gdaex, sql);
-				g_free (sql);
 				break;
 
 			case PROP_ROOT:
@@ -177,7 +163,7 @@ zak_confi_db_plugin_finalize (GObject *object)
 	G_OBJECT_CLASS (zak_confi_db_plugin_parent_class)->finalize (object);
 }
 
-gboolean
+static gboolean
 zak_confi_db_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc_string)
 {
 	ZakConfiDBPlugin *plugin = ZAK_CONFI_DB_PLUGIN (pluggable);
@@ -278,11 +264,11 @@ static GdaDataModel
 			token = g_strstrip (g_strdup (tokens[i]));
 			if (strcmp (token, "") != 0)
 				{
-					sql = g_strdup_printf ("SELECT * "
-					                       "FROM %cvalues%c "
-					                       "WHERE id_configs = %d "
-					                       "AND id_parent = %d "
-					                       "AND %ckey%c = '%s'",
+					sql = g_strdup_printf ("SELECT *"
+					                       " FROM %cvalues%c"
+					                       " WHERE id_configs = %d"
+					                       " AND id_parent = %d"
+					                       " AND %ckey%c = '%s'",
 					                       priv->chrquot, priv->chrquot,
 					                       priv->id_config,
 					                       id_parent,
@@ -303,9 +289,11 @@ static GdaDataModel
 						}
 					id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 				}
+			g_free (token);
 
 			i++;
 		}
+	g_strfreev (tokens);
 
 	return dm;
 }
@@ -357,9 +345,7 @@ zak_confi_db_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNod
 					GNode *newNode;
 					ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
-					ck->id_config = priv->id_config;
-					ck->id = gdaex_data_model_get_field_value_integer_at (dm, i, "id");
-					ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, i, "id_parent");
+					ck->config = g_strdup (priv->name);
 					ck->key = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "key"));
 					ck->value = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "value"));
 					ck->description = g_strdup (gdaex_data_model_get_field_value_stringify_at (dm, i, "description"));
@@ -367,7 +353,10 @@ zak_confi_db_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNod
 
 					newNode = g_node_append_data (parentNode, ck);
 
-					zak_confi_db_plugin_get_children (pluggable, newNode, ck->id, g_strconcat (path, (g_strcmp0 (path, "") == 0 ? "" : "/"), ck->key, NULL));
+					zak_confi_db_plugin_get_children (pluggable,
+													  newNode,
+													  gdaex_data_model_get_field_value_integer_at (dm, i, "id"),
+													  g_strconcat (path, (g_strcmp0 (path, "") == 0 ? "" : "/"), ck->key, NULL));
 				}
 			g_object_unref (dm);
 		}
@@ -385,7 +374,6 @@ static GList
 	gchar *where;
 
 	guint row;
-	guint id;
 	guint rows;
 
 	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
@@ -504,19 +492,92 @@ GNode
 
 	ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
-	ck->id_config = priv->id_config;
-	ck->id = 0;
-	ck->id_parent = 0;
+	ck->config = g_strdup (priv->name);
 	ck->path = "";
-	ck->description = "";
 	ck->key = g_strdup ("/");
 	ck->value = "";
+	ck->description = "";
 
 	node = g_node_new (ck);
 
 	zak_confi_db_plugin_get_children (pluggable, node, 0, path);
 
 	return node;
+}
+
+static ZakConfiConfi
+*zak_confi_db_plugin_add_config (ZakConfiPluggable *pluggable, const gchar *name, const gchar *description)
+{
+	ZakConfiConfi *cc;
+
+	gchar *sql;
+	gint id;
+
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	cc = NULL;
+
+	id = gdaex_get_new_id (priv->gdaex, "configs", "id", NULL);
+
+	sql = g_strdup_printf ("INSERT INTO configs"
+						   " VALUES (%d, '%s', '%s')",
+						   id,
+						   gdaex_strescape (name, NULL),
+						   gdaex_strescape (description, NULL));
+	if (gdaex_execute (priv->gdaex, sql) > 0)
+		{
+			cc = g_new0 (ZakConfiConfi, 1);
+			cc->name = g_strdup (name);
+			cc->description = g_strdup (description);
+		}
+
+	g_free (sql);
+
+	return cc;
+}
+
+static gboolean
+zak_confi_db_plugin_set_config (ZakConfiPluggable *pluggable,
+                                   const gchar *name,
+                                   const gchar *description)
+{
+	gboolean ret;
+	gchar *sql;
+
+	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	g_return_val_if_fail (name != NULL, FALSE);
+
+	ret = TRUE;
+
+	sql = g_strdup_printf ("UPDATE configs"
+						   " SET name = '%s'"
+						   " WHERE id = %d",
+						   gdaex_strescape (name, NULL),
+						   priv->id_config);
+	if (gdaex_execute (priv->gdaex, sql) < 1)
+		{
+			ret = FALSE;
+		}
+	g_free (sql);
+	priv->name = g_strdup (name);
+
+	if (description != NULL)
+		{
+			sql = g_strdup_printf ("UPDATE configs"
+								   " SET description = '%s'"
+								   " WHERE id = %d",
+								   gdaex_strescape (description, NULL),
+								   priv->id_config);
+			if (gdaex_execute (priv->gdaex, sql) < 1)
+				{
+					ret = FALSE;
+				}
+			g_free (sql);
+			priv->description = g_strdup (description);
+		}
+
+	return ret;
 }
 
 static ZakConfiKey
@@ -572,40 +633,17 @@ static ZakConfiKey
 			sql = g_strdup_printf ("SELECT id"
 			                       " FROM %cvalues%c"
 			                       " WHERE id_configs = %d"
-			                       " AND name = '%s'",
+								   " AND id_parent = %d"
+			                       " AND key = '%s'",
 			                       priv->chrquot, priv->chrquot,
 			                       priv->id_config,
+								   id_parent,
 			                       gdaex_strescape (key_, NULL));
 			dm = gdaex_query (priv->gdaex, sql);
 			g_free (sql);
-			if (dm != NULL && gda_data_model_get_n_rows (dm) > 0)
+			if (dm == NULL
+				|| gda_data_model_get_n_rows (dm) < 1)
 				{
-					g_free (sql);
-					id = gdaex_data_model_get_value_integer_at (dm, 0, 0);
-					g_object_unref (dm);
-
-					sql = g_strdup_printf ("UPDATE %cvalues%c"
-					                       " SET %ckey%c = '%s',"
-					                       " value = '%s',"
-					                       " WHERE id_configs = %d"
-					                       " AND id = %d",
-					                       priv->chrquot, priv->chrquot,
-					                       priv->chrquot, priv->chrquot,
-					                       gdaex_strescape (key_, NULL),
-					                       gdaex_strescape (ck->value, NULL),
-					                       priv->id_config,
-					                       id);
-					if (gdaex_execute (priv->gdaex, sql) == -1)
-						{
-							/* TO DO */
-							g_free (sql);
-							return NULL;
-						}
-					g_free (sql);
-				}
-			else
-				{
-					g_free (sql);
 					id = 0;
 
 					/* find new id */
@@ -643,12 +681,7 @@ static ZakConfiKey
 				}
 
 			ck = g_new0 (ZakConfiKey, 1);
-			ck->id_config = priv->id_config;
-			ck->id = id;
-			ck->id_parent = id_parent;
-			ck->key = g_strdup (key_);
-			ck->value = g_strdup ("");
-			ck->description = g_strdup ("");
+			ck->config = g_strdup (priv->name);
 			if (id_parent == 0)
 				{
 					ck->path = g_strdup ("");
@@ -657,6 +690,9 @@ static ZakConfiKey
 				{
 					ck->path = g_strdup (parent_);
 				}
+			ck->key = g_strdup (key_);
+			ck->value = g_strdup ("");
+			ck->description = g_strdup ("");
 
 			g_free (key_);
 		}
@@ -664,7 +700,7 @@ static ZakConfiKey
 
 	if (ck != NULL)
 		{
-			if (ck->id_parent != 0)
+			if (g_strcmp0 (ck->path, "") != 0)
 				{
 					path = g_strconcat (ck->path, "/", key, NULL);
 				}
@@ -694,7 +730,15 @@ zak_confi_db_plugin_key_set_key (ZakConfiPluggable *pluggable,
 	gboolean ret;
 	gchar *sql;
 
+	GdaDataModel *dm;
+
 	ZakConfiDBPluginPrivate *priv = ZAK_CONFI_DB_PLUGIN_GET_PRIVATE (pluggable);
+
+	dm = zak_confi_db_plugin_path_get_data_model (pluggable, g_strdup_printf ("%s/%s", ck->path, ck->key));
+	if (dm == NULL)
+		{
+			return FALSE;
+		}
 
 	sql = g_strdup_printf ("UPDATE %cvalues%c"
 	                       " SET %ckey%c = '%s',"
@@ -708,7 +752,7 @@ zak_confi_db_plugin_key_set_key (ZakConfiPluggable *pluggable,
 	                       gdaex_strescape (ck->value, NULL),
 	                       gdaex_strescape (ck->description, NULL),
 	                       priv->id_config,
-	                       ck->id);
+	                       gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
 
 	ret = (gdaex_execute (priv->gdaex, sql) >= 0);
 	g_free (sql);
@@ -742,13 +786,11 @@ static ZakConfiKey
 		}
 
 	ck = g_new0 (ZakConfiKey, 1);
-	ck->id_config = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_configs");
-	ck->id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
-	ck->id_parent = gdaex_data_model_get_field_value_integer_at (dm, 0, "id_parent");
+	ck->config = g_strdup (priv->name);
+	ck->path = g_strdup (path_);
 	ck->key = gdaex_data_model_get_field_value_stringify_at (dm, 0, "key");
 	ck->value = gdaex_data_model_get_field_value_stringify_at (dm, 0, "value");
 	ck->description = gdaex_data_model_get_field_value_stringify_at (dm, 0, "description");
-	ck->path = g_strdup (path_);
 
 	if (dm != NULL)
 		{
@@ -789,10 +831,15 @@ zak_confi_db_plugin_delete_id_from_db_values (ZakConfiPluggable *pluggable, gint
 static gboolean
 zak_confi_db_plugin_remove_path_traverse_func (GNode *node, gpointer data)
 {
+	GdaDataModel *dm;
+	ZakConfiPluggable* pluggable;
+
+	pluggable = (ZakConfiPluggable *)data;
 	ZakConfiKey *ck = (ZakConfiKey *)node->data;
-	if (ck->id != 0)
+	if (g_strcmp0 (ck->value, "") != 0)
 		{
-			zak_confi_db_plugin_delete_id_from_db_values ((ZakConfiPluggable *)data, ck->id);
+			dm = zak_confi_db_plugin_path_get_data_model (pluggable, g_strdup_printf ("%s/%s", ck->path, ck->key));
+			zak_confi_db_plugin_delete_id_from_db_values (pluggable, gdaex_data_model_get_field_value_integer_at (dm, 0, "id"));
 		}
 
 	return FALSE;
@@ -813,18 +860,21 @@ zak_confi_db_plugin_remove_path (ZakConfiPluggable *pluggable, const gchar *path
 			gchar *path_ = g_strdup (path);
 
 			/* removing every child key */
-			GNode *node, *root;
+			GNode *node;
 			gint id = gdaex_data_model_get_field_value_integer_at (dm, 0, "id");
 
-			node = g_node_new (path_);
+			ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
+
+			ck->config = g_strdup (priv->name);
+			ck->path = path_;
+			ck->key = gdaex_data_model_get_field_value_stringify_at (dm, 0, "key");
+			ck->value = "";
+			ck->description = "";
+
+			node = g_node_new (ck);
 			zak_confi_db_plugin_get_children (pluggable, node, id, path_);
 
-			root = g_node_get_root (node);
-
-			if (g_node_n_nodes (root, G_TRAVERSE_ALL) > 1)
-				{
-					g_node_traverse (root, G_PRE_ORDER, G_TRAVERSE_ALL, -1, zak_confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
-				}
+			g_node_traverse (node, G_POST_ORDER, G_TRAVERSE_ALL, -1, zak_confi_db_plugin_remove_path_traverse_func, (gpointer)pluggable);
 
 			/* removing the path */
 			ret = zak_confi_db_plugin_delete_id_from_db_values (pluggable, id);
@@ -899,6 +949,8 @@ zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 	iface->path_get_value = zak_confi_db_plugin_path_get_value;
 	iface->path_set_value = zak_confi_db_plugin_path_set_value;
 	iface->get_tree = zak_confi_db_plugin_get_tree;
+	iface->add_config = zak_confi_db_plugin_add_config;
+	iface->set_config = zak_confi_db_plugin_set_config;
 	iface->add_key = zak_confi_db_plugin_add_key;
 	iface->key_set_key = zak_confi_db_plugin_key_set_key;
 	iface->path_get_confi_key = zak_confi_db_plugin_path_get_confi_key;
