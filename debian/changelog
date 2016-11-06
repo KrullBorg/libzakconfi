@@ -1,5 +1,10 @@
-libzakconfi (0.10.0-1) UNRELEASED; urgency=medium
+libzakconfi (0.10.0-1~1.gbp0907f7) UNRELEASED; urgency=medium
 
+  ** SNAPSHOT build @0907f7458d7d5a92e033839c192f7e0fcaf4cf50 **
+
+  [ Andrea Zagli ]
   * Initial release
+
+  [ tux ]
 
  -- Andrea Zagli <azagli@libero.it>  Sun, 22 May 2016 16:29:20 +0200
