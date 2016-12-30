@@ -32,7 +32,7 @@ G_BEGIN_DECLS
  * Type checking and casting macros
  */
 #define ZAK_CONFI_TYPE_PLUGGABLE             (zak_confi_pluggable_get_type ())
-#define ZAK_CONFI_PLUGGABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CONFI_TYPE_PLUGGABLE, ZakConfiPluggable))
+#define ZAK_CONFI_PLUGGABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggable))
 #define ZAK_CONFI_PLUGGABLE_IFACE(obj)       (G_TYPE_CHECK_CLASS_CAST ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggableInterface))
 #define ZAK_CONFI_IS_PLUGGABLE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), ZAK_CONFI_TYPE_PLUGGABLE))
 #define ZAK_CONFI_PLUGGABLE_GET_IFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), ZAK_CONFI_TYPE_PLUGGABLE, ZakConfiPluggableInterface))
@@ -64,6 +64,12 @@ struct _ZakConfiPluggableInterface {
 	                            const gchar *path,
 	                            const gchar *value);
 	GNode *(*get_tree) (ZakConfiPluggable *pluggable);
+	ZakConfiConfi *(*add_config) (ZakConfiPluggable *pluggable,
+	                      const gchar *name,
+	                      const gchar *description);
+	gboolean (*set_config) (ZakConfiPluggable *pluggable,
+	                      const gchar *name,
+	                      const gchar *description);
 	ZakConfiKey *(*add_key) (ZakConfiPluggable *pluggable,
 	                      const gchar *parent,
 	                      const gchar *key,
@@ -92,6 +98,12 @@ gboolean zak_confi_pluggable_path_set_value (ZakConfiPluggable *pluggable,
                                const gchar *path,
                                const gchar *value);
 GNode *zak_confi_pluggable_get_tree (ZakConfiPluggable *pluggable);
+ZakConfiConfi *zak_confi_pluggable_add_config (ZakConfiPluggable *pluggable,
+                                   const gchar *name,
+                                   const gchar *description);
+gboolean zak_confi_pluggable_set_config (ZakConfiPluggable *pluggable,
+                                   const gchar *name,
+                                   const gchar *description);
 ZakConfiKey *zak_confi_pluggable_add_key (ZakConfiPluggable *pluggable,
                                    const gchar *parent,
                                    const gchar *key,

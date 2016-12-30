@@ -22,10 +22,16 @@
 
 #include <string.h>
 
-#include <libgdaex/libgdaex.h>
+#include <glib.h>
+
+#ifdef G_OS_WIN32
+#include <windows.h>
+#endif
 
 #include "libzakconfi.h"
 
+
+static gchar *pluginsdir;
 
 enum
 {
@@ -55,19 +61,40 @@ static ZakConfiPluggable *zak_confi_get_confi_pluggable_from_cnc_string (const g
 typedef struct _ZakConfiPrivate ZakConfiPrivate;
 struct _ZakConfiPrivate
 	{
-		GdaEx *gdaex;
 		gint id_config;
 		gchar *name;
 		gchar *description;
 		gchar *root;
 		GHashTable *values;
 
-		gchar chrquot;
-
 		ZakConfiPluggable *pluggable;
 	};
 
 G_DEFINE_TYPE (ZakConfi, zak_confi, G_TYPE_OBJECT)
+
+#ifdef G_OS_WIN32
+static HMODULE backend_dll = NULL;
+
+BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
+
+BOOL WINAPI
+DllMain (HINSTANCE hinstDLL,
+         DWORD     fdwReason,
+         LPVOID    lpReserved)
+{
+	switch (fdwReason)
+		{
+			case DLL_PROCESS_ATTACH:
+				backend_dll = (HMODULE) hinstDLL;
+				break;
+			case DLL_THREAD_ATTACH:
+			case DLL_THREAD_DETACH:
+			case DLL_PROCESS_DETACH:
+				break;
+		}
+	return TRUE;
+}
+#endif
 
 static void
 zak_confi_class_init (ZakConfiClass *klass)
@@ -105,7 +132,7 @@ static ZakConfiPluggable
 			return NULL;
 		}
 
-	peas_engine_add_search_path (peas_engine, PLUGINSDIR, NULL);
+	peas_engine_add_search_path (peas_engine, pluginsdir, NULL);
 
 	lst_plugins = peas_engine_get_plugin_list (peas_engine);
 	while (lst_plugins)
@@ -156,6 +183,33 @@ ZakConfi
 
 	g_return_val_if_fail (cnc_string != NULL, NULL);
 
+#ifdef G_OS_WIN32
+
+	gchar *moddir;
+	gchar *p;
+
+	moddir = g_win32_get_package_installation_directory_of_module (backend_dll);
+
+	p = g_strrstr (moddir, g_strdup_printf ("%c", G_DIR_SEPARATOR));
+	if (p != NULL
+	    && (g_ascii_strcasecmp (p + 1, "src") == 0
+	    || g_ascii_strcasecmp (p + 1, ".libs") == 0))
+		{
+			pluginsdir = g_strdup (PLUGINSDIR);
+		}
+	else
+		{
+			pluginsdir = g_build_filename (moddir, "lib", PACKAGE, "plugins", NULL);
+		}
+
+#undef PLUGINSDIR
+
+#else
+
+	pluginsdir = g_strdup (PLUGINSDIR);
+
+#endif
+
 	confi = NULL;
 
 	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
@@ -195,26 +249,143 @@ PeasPluginInfo
  * contains configuration.
  * @filter: (nullable):
  *
- * Returns: (element-type ZakConfi) (transfer container):  a #GList of #ZakConfiZakConfi. If there's no configurations, returns a valid
+ * Returns: (element-type ZakConfiConfi) (transfer container):  a #GList of #ZakConfiConfi. If there's no configurations, returns a valid
  * #GList but with a unique NULL element.
  */
 GList
 *zak_confi_get_configs_list (const gchar *cnc_string,
-                         const gchar *filter)
+							 const gchar *filter)
 {
 	ZakConfiPluggable *pluggable;
 	GList *lst;
 
-	lst = NULL;
-
 	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
 
-	if (pluggable != NULL)
+	if (pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			lst = NULL;
+		}
+	else
 		{
 			lst = zak_confi_pluggable_get_configs_list (pluggable, filter);
 		}
 
 	return lst;
+}
+
+/**
+ * zak_confi_get_confi_confi:
+ * @confi:
+ *
+ * Returns: a #ZakConfiConfi struct.
+ */
+ZakConfiConfi
+*zak_confi_get_confi_confi (ZakConfi *confi)
+{
+	ZakConfiConfi *cc;
+
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
+
+	cc = g_new0 (ZakConfiConfi, 1);
+	cc->name = g_strdup (priv->name);
+	cc->description = g_strdup (priv->description);
+
+	return cc;
+}
+
+/**
+ * zak_confi_add_config:
+ * @cnc_string:
+ * @name:
+ * @description:
+ *
+ * Returns: a #ZakConfiConfi struct just rceated.
+ */
+ZakConfiConfi
+*zak_confi_add_config (const gchar *cnc_string,
+					   const gchar *name,
+					   const gchar *description)
+{
+	ZakConfiPluggable *pluggable;
+	ZakConfiConfi *cc;
+
+	pluggable = zak_confi_get_confi_pluggable_from_cnc_string (cnc_string);
+
+	if (pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			cc = NULL;
+		}
+	else
+		{
+			cc = zak_confi_pluggable_add_config (pluggable, name, description);
+		}
+
+	return cc;
+}
+
+static gboolean
+add_traverse_func (GNode *node,
+               gpointer data)
+{
+	ZakConfiKey *ck = (ZakConfiKey *)node->data;
+
+	if (g_strcmp0 (ck->key, "") != 0
+		&& g_strcmp0 (ck->key, "/") != 0)
+		{
+			zak_confi_add_key ((ZakConfi *)data, ck->path, ck->key, ck->value);
+		}
+
+	return FALSE;
+}
+
+/**
+ * zak_confi_add_config_from_confi:
+ * @confi_source:
+ * @cnc_string:
+ * @name_new:
+ * @description_new:
+ *
+ * Returns: a #ZakConfiConfi struct just created.
+ */
+ZakConfiConfi
+*zak_confi_add_config_from_confi (ZakConfi *confi_source,
+								  const gchar *cnc_string,
+								  const gchar *name_new,
+								  const gchar *description_new)
+{
+	ZakConfi *confi;
+	ZakConfiConfi *cc;
+
+	GNode *tree;
+
+	gchar *confi_name;
+
+	cc = zak_confi_add_config (cnc_string, name_new, description_new);
+	if (cc != NULL)
+		{
+			tree = zak_confi_get_tree (confi_source);
+			if (tree != NULL)
+				{
+					confi_name = g_strdup_printf ("%s;CONFI_NAME=%s", cnc_string, cc->name);
+
+					confi = zak_confi_new (confi_name);
+
+					if (confi != NULL)
+						{
+							g_node_traverse (tree, G_PRE_ORDER, G_TRAVERSE_ALL, -1, add_traverse_func, (gpointer)confi);
+						}
+
+					g_free (confi_name);
+				}
+			else
+				{
+					g_warning ("ZakConfi source is empty.");
+				}
+		}
+
+	return cc;
 }
 
 /**
@@ -307,6 +478,34 @@ zak_confi_set_root (ZakConfi *confi, const gchar *root)
 		}
 
 	return ret;
+}
+
+/**
+ * zak_confi_set_config:
+ * @confi: a #ZakConfi object.
+ * @name:
+ * @description:
+ *
+ * Returns:
+ */
+gboolean
+zak_confi_set_config (ZakConfi *confi,
+					  const gchar *name,
+					  const gchar *description)
+{
+	ZakConfiPrivate *priv = ZAK_CONFI_GET_PRIVATE (confi);
+
+	if (priv->pluggable == NULL)
+		{
+			g_warning ("Not initialized.");
+			return FALSE;
+		}
+	else
+		{
+			return zak_confi_pluggable_set_config (priv->pluggable,
+												   name,
+												   description);
+		}
 }
 
 /**

@@ -2,7 +2,8 @@ pluginsdir = $(libdir)/$(PACKAGE)/plugins
 
 AM_CPPFLAGS = \
               -I$(top_srcdir) \
-              $(LIBCONFI_CFLAGS)
+              $(LIBCONFI_CFLAGS) \
+              -DG_LOG_DOMAIN=\"ZakConfiFile\"
 
 plugins_LTLIBRARIES = libfile.la
 

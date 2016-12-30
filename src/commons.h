@@ -46,13 +46,11 @@ GType zak_confi_key_get_type ();
 typedef struct _ZakConfiKey ZakConfiKey;
 struct _ZakConfiKey
 	{
-		gint id_config;
-		gint id;
-		gint id_parent;
+		gchar *config;
+		gchar *path;
 		gchar *key;
 		gchar *value;
 		gchar *description;
-		gchar *path;
 	};
 
 ZakConfiKey *zak_confi_key_copy (ZakConfiKey *key);

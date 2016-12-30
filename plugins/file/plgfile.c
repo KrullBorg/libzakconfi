@@ -91,13 +91,9 @@ zak_confi_file_plugin_set_property (GObject      *object,
 				break;
 
 			case PROP_NAME:
-				priv->name = g_strdup (g_value_get_string (value));
-				zak_confi_file_plugin_path_set_value ((ZakConfiPluggable *)plugin, "/CONFI/name", priv->name);
 				break;
 
 			case PROP_DESCRIPTION:
-				priv->description = g_strdup (g_value_get_string (value));
-				zak_confi_file_plugin_path_set_value ((ZakConfiPluggable *)plugin, "/CONFI/description", priv->description);
 				break;
 
 			case PROP_ROOT:
@@ -167,11 +163,34 @@ zak_confi_file_plugin_initialize (ZakConfiPluggable *pluggable, const gchar *cnc
 {
 	gboolean ret;
 	GError *error;
+	gchar *strconfname;
+	gchar *strconfnameend;
+	gchar *cncstringnew;
 
 	ZakConfiFilePlugin *plugin = ZAK_CONFI_FILE_PLUGIN (pluggable);
 	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (plugin);
 
 	priv->cnc_string = g_strdup (cnc_string);
+
+	strconfname = g_strstr_len (priv->cnc_string, -1, ";CONFI_NAME");
+	if (strconfname != NULL)
+		{
+			/* ignore CONFI_NAME parameter on connection string */
+			strconfnameend = g_strstr_len (strconfname + 1, -1, ";");
+			if (strconfnameend == NULL)
+				{
+					priv->cnc_string[strlen (priv->cnc_string) - strlen (strconfname)] = '\0';
+				}
+			else
+				{
+					cncstringnew = g_strdup_printf ("%s%s",
+													g_strndup (priv->cnc_string, strlen (priv->cnc_string) - strlen (strconfname)),
+													g_strdup (strconfnameend));
+					g_free (priv->cnc_string);
+					priv->cnc_string = g_strdup (cncstringnew);
+					g_free (cncstringnew);
+				}
+		}
 
 	priv->kfile = g_key_file_new ();
 	error = NULL;
@@ -257,6 +276,89 @@ static gchar
 	return ret;
 }
 
+static GNode
+*check_nodes (ZakConfiPluggable *pluggable, const gchar *path, GNode *tree)
+{
+	gchar **tokens;
+	guint i;
+	gchar *token;
+
+	gchar *group;
+	GString *_path;
+
+	guint n;
+	GNode *cur_node;
+	GNode *this_node;
+	GNode *parent_node;
+
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	tokens = g_strsplit (path, "/", -1);
+
+	_path = g_string_new ("");
+
+	i = 0;
+	cur_node = g_node_get_root (tree);
+	while (tokens[i] != NULL)
+		{
+			parent_node = NULL;
+
+			token = g_strstrip (g_strdup (tokens[i]));
+			if (g_strcmp0 (token, "") == 0)
+				{
+					i++;
+					continue;
+				}
+
+			group = g_strdup_printf ("%s%s%s", _path->str, g_strcmp0 (_path->str, "") != 0 ? "/" : "", tokens[i]);
+
+			n = 0;
+			while ((parent_node = g_node_nth_child (cur_node, n)) != NULL)
+				{
+					ZakConfiKey *cknode = (ZakConfiKey *)parent_node->data;
+
+					if (g_strcmp0 (g_strdup_printf ("%s%s%s", cknode->path, g_strcmp0 (cknode->path, "") == 0 ? "" : "/", cknode->key), group) == 0)
+						{
+							break;
+						}
+					else
+						{
+							parent_node = NULL;
+						}
+
+					n++;
+				}
+
+			if (parent_node == NULL)
+				{
+					/* create the missing parent group */
+					ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
+
+					ck->key = g_strdup (tokens[i]);
+					ck->value = "";
+					ck->description = "";
+					ck->path = g_strdup (_path->str);
+
+					g_node_append_data (cur_node, ck);
+				}
+			else
+				{
+					cur_node = parent_node;
+				}
+
+			g_string_append_printf (_path, "%s%s", g_strcmp0 (_path->str, "") != 0 ? "/" : "", tokens[i]);
+
+			g_free (token);
+			g_free (group);
+
+			i++;
+		}
+
+	g_strfreev (tokens);
+
+	return cur_node;
+}
+
 static void
 zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentNode)
 {
@@ -277,14 +379,7 @@ zak_confi_file_plugin_get_children (ZakConfiPluggable *pluggable, GNode *parentN
 
 	for (g = 0; g < lg; g++)
 		{
-			ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
-
-			ck->key = g_strdup (groups[g]);
-			ck->value = "";
-			ck->description = "";
-			ck->path = "";
-
-			gNode = g_node_append_data (parentNode, ck);
+			gNode = check_nodes (pluggable, groups[g], parentNode);
 
 			error = NULL;
 			keys = g_key_file_get_keys (priv->kfile, groups[g], &lk, &error);
@@ -406,16 +501,38 @@ GNode
 
 	ZakConfiKey *ck = g_new0 (ZakConfiKey, 1);
 
+	ck->config = "Default";
 	ck->path = "";
-	ck->description = "";
 	ck->key = g_strdup ("/");
 	ck->value = "";
+	ck->description = "";
 
 	node = g_node_new (ck);
 
 	zak_confi_file_plugin_get_children (pluggable, node);
 
 	return node;
+}
+
+static ZakConfiConfi
+*zak_confi_file_plugin_add_config (ZakConfiPluggable *pluggable, const gchar *name, const gchar *description)
+{
+	return NULL;
+}
+
+static gboolean
+zak_confi_file_plugin_set_config (ZakConfiPluggable *pluggable, const gchar *name, const gchar *description)
+{
+	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
+
+	priv->name = g_strdup (name);
+	zak_confi_file_plugin_path_set_value (pluggable, "/CONFI/name", priv->name);
+
+	if (description != NULL)
+		{
+			priv->description = g_strdup (description);
+			zak_confi_file_plugin_path_set_value (pluggable, "/CONFI/description", priv->description);
+		}
 }
 
 static ZakConfiKey
@@ -438,10 +555,11 @@ static ZakConfiKey
 			if (zak_confi_file_plugin_path_get_group_and_key (path, &group, &key_))
 				{
 					ck = g_new0 (ZakConfiKey, 1);
+					ck->config = "Default";
+					ck->path = g_strdup (path);
 					ck->key = g_strdup (key);
 					ck->value = zak_confi_file_plugin_path_get_value (pluggable, path);
 					ck->description = g_key_file_get_comment (priv->kfile, group, key, NULL);;
-					ck->path = g_strdup (path);
 
 					g_free (group);
 					g_free (key_);
@@ -457,13 +575,35 @@ zak_confi_file_plugin_key_set_key (ZakConfiPluggable *pluggable,
                                ZakConfiKey *ck)
 {
 	gboolean ret;
+	GError *error;
 
 	gchar *path;
+	gchar *group;
+	gchar *key;
 
 	ZakConfiFilePluginPrivate *priv = ZAK_CONFI_FILE_PLUGIN_GET_PRIVATE (pluggable);
 
 	path = g_strdup_printf ("%s/%s", ck->path, ck->key);
 	ret = zak_confi_file_plugin_path_set_value (pluggable, path, ck->value);
+
+	group = NULL;
+	key = NULL;
+	if (!zak_confi_file_plugin_path_get_group_and_key (path, &group, &key))
+		{
+			return FALSE;
+		}
+
+	g_key_file_set_comment (priv->kfile, group, key, ck->description, NULL);
+	g_free (group);
+	g_free (key);
+
+	error = NULL;
+	ret = g_key_file_save_to_file (priv->kfile, priv->cnc_string, &error);
+	if (error != NULL)
+		{
+			ret = FALSE;
+		}
+
 	g_free (path);
 
 	return ret;
@@ -491,10 +631,11 @@ static ZakConfiKey
 	if (zak_confi_file_plugin_path_get_group_and_key (path_, &group, &key))
 		{
 			ck = g_new0 (ZakConfiKey, 1);
+			ck->config = "Default";
+			ck->path = g_strdup (group);
 			ck->key = g_strdup (key);
 			ck->value = zak_confi_file_plugin_path_get_value (pluggable, path_);
 			ck->description = g_key_file_get_comment (priv->kfile, group, key, NULL);
-			ck->path = g_strdup (group);
 
 			g_free (group);
 			g_free (key);
@@ -585,6 +726,8 @@ zak_confi_pluggable_iface_init (ZakConfiPluggableInterface *iface)
 	iface->path_get_value = zak_confi_file_plugin_path_get_value;
 	iface->path_set_value = zak_confi_file_plugin_path_set_value;
 	iface->get_tree = zak_confi_file_plugin_get_tree;
+	iface->add_config = zak_confi_file_plugin_add_config;
+	iface->set_config = zak_confi_file_plugin_set_config;
 	iface->add_key = zak_confi_file_plugin_add_key;
 	iface->key_set_key = zak_confi_file_plugin_key_set_key;
 	iface->path_get_confi_key = zak_confi_file_plugin_path_get_confi_key;
